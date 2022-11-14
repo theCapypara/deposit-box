@@ -1,0 +1,30 @@
+on: [push]
+
+name: Build with different features
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        features:
+          - ""
+          - "default"
+          - "s3_bucket_list"
+          - "geoip"
+          - "pypi"
+          - "flatpak"
+          - "github"
+          - "sort_versions"
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --no-default-features --features=${{ matrix.features }}
