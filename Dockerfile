@@ -1,4 +1,4 @@
-/EXPOFROM rust:alpine as builder
+FROM rust:alpine as builder
 
 RUN apk add --no-cache musl-dev openssl openssl-dev pkgconfig glib-dev
 
