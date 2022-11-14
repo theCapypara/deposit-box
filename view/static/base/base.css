@@ -1,0 +1,156 @@
+.header {
+    display: flex;
+    justify-content: space-between;
+}
+
+.products-list img {
+    max-width: 50px;
+}
+
+.logo {
+    max-height: 128px;
+    max-width: 90%;
+    margin: 4px 0;
+}
+
+.header ul {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    gap: 8px;
+}
+
+.header ul li {
+    display: block;
+}
+
+.prev-release:before {
+    content: '←'
+}
+
+.next-release:after {
+    content: '→';
+}
+
+.downloads {
+    display: grid;
+    grid-template-columns: max-content auto max-content max-content;
+    grid-gap: 10px;
+}
+
+.download-item {
+    display: contents;
+}
+
+.download-item > * {
+    border: 1px outset;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    padding: 8px;
+}
+
+.download-item > .dli--icon {
+    position: relative;
+    height: 100%;
+    width: 36px;
+}
+
+.download-item > .dli--icon img {
+    position: absolute;
+    margin: auto;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 32px;
+}
+
+.dli--file-name .file-name--title {
+    font-size: 1.2em;
+}
+
+.dli--file-name {
+    display: flex;
+    flex-direction: column;
+    font-size: 0.8em;
+}
+
+.dli--file-name .file-name--extra p {
+    display: inline-block;
+    margin: 0;
+    font-size: 0.8em;
+}
+
+.dli--file-name .file-name--extra em {
+    font-size: 0.8em;
+}
+
+.download-item.download-item-header > * {
+    display: block;
+    margin: 0 auto;
+    text-align: center;
+    text-decoration: underline;
+}
+
+.download-item h4 {
+    margin: 0;
+}
+
+.mirror-select {
+    display: none;
+}
+
+@media (max-width: 560px) {
+    .header {
+        flex-direction: column-reverse;
+    }
+
+    .downloads {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .download-item {
+        display: block;
+    }
+
+    .download-item > .dli--icon {
+        float: left;
+        height: 18px;
+        width: 18px;
+    }
+
+    .download-item > .dli--icon img {
+        width: 16px;
+    }
+
+    .dli--file-size {
+        float: left;
+        font-style: italic;
+    }
+
+    .dli--modified-date {
+        font-style: italic;
+    }
+
+    .file-name--extra {
+        word-break: break-all;
+    }
+
+    .download-item.download-item-header {
+        display: none;
+    }
+
+    .download-item > * {
+        border: 0;
+        width: auto;
+        height: auto;
+        box-sizing: content-box;
+        padding: 8px;
+    }
+
+    .download-item h4 {
+        margin: 0;
+    }
+}

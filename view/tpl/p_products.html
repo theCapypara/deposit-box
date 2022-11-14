@@ -1,0 +1,25 @@
+{% extends "page.html" %}
+
+{% block title %} {{ self_name }} - All Products{% endblock %}
+
+{% block content %}
+<div class="upper">
+    <div class="logo-and-title">
+        <div class="title">
+            <h1>All Products</h1>
+        </div>
+    </div>
+    <ul class="products-list">
+    {% for (pkey, product) in products %}
+        <li><a href="/{{ pkey }}">
+            {% match product.icon_path %}
+                {% when Some with (icon_path) %}
+                <img src="{{ default_endpoint_url }}/{{ icon_path }}" alt="{{ product.name }}">
+                {% when None %}
+            {% endmatch %}
+            {{ product.name }}
+        </a></li>
+    {% endfor %}
+    </ul>
+</div>
+{% endblock %}

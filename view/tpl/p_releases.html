@@ -1,0 +1,29 @@
+{% extends "page.html" %}
+
+{% block title %} {{ self_name }} - {{ product.name }}{% endblock %}
+
+{% block content %}
+<div class="upper">
+    <div class="logo-and-title">
+        {% match product.icon_path %}
+            {% when Some with (icon_path) %}
+            <img src="{{ default_endpoint_url }}/{{ icon_path }}" alt="{{ product.name }}" class="logo">
+            {% when None %}
+        {% endmatch %}
+        <div class="title">
+            <h1>{{ product.name }}</h1>
+            <h2>All Releases</h2>
+        </div>
+    </div>
+    <ul class="releases-list">
+        {% for vkey in product.versions.map().keys().rev() %}
+        <li>
+            <a href="/{{ product_key }}/{{ vkey }}">{{ vkey }}</a>
+            {% if loop.first %}
+            <em class="latest">(<a href="/{{ product_key }}/latest">latest</a>)</em>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends "page.html" %}
+
+{% block title %}{{ self_name }} - Internal Server Error{% endblock %}
+
+{% block content %}
+<div class="upper">
+    <div class="title">
+        <h1>Internal Server Error</h1>
+    </div>
+    <p>
+        The server sadly encountered an error trying to send you the content of this page.
+        We can offer you a funny cat as an apology:
+    </p>
+    <p><img src="https://http.cat/500" alt="A funny cat."></p>
+</div>
+{% endblock %}

@@ -1,0 +1,150 @@
+@import url("https://fonts.googleapis.com/css2?family=Oswald:wght@200;300;400;500;600;700&display=swap");
+
+@font-face {
+    font-family: scientifica;
+    src: url("/static/theme/skytemple/font/scientifica.ttf");
+}
+
+body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: 'Oswald', sans-serif;
+    font-size: 1.2em;
+}
+
+body {
+    background-color: #fdf7ee;
+    background-image: url("/static/theme/skytemple/splash.jpg");
+    background-attachment: fixed;
+    background-size: cover;
+}
+
+.header, .footer {
+    background: black;
+    font-family: scientifica, monospace;
+    font-smooth: never;
+    -webkit-font-smoothing : none;
+    padding: 2px;
+    color: white;
+    vertical-align: middle;
+}
+
+.header li + li::before {
+    content: " | ";
+}
+
+.next-release, .prev-release {
+    font-size: 0.8em;
+    color: #aaa;
+}
+
+.next-release:after, .prev-release:before {
+    font-size: 1.2em;
+    color: white;
+}
+
+.next-release:after {
+    margin-left: 2px;
+}
+
+.prev-release:before {
+    margin-right: 2px;
+}
+
+a, a:hover, a:active, a:visited {
+    color: inherit;
+}
+
+.header a, .header a:visited {
+    text-decoration: none;
+}
+
+a:hover, a:active {
+    text-decoration: underline;
+}
+
+.upper {
+    padding: 16px 16px 24px;
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.lower {
+    padding: 24px 16px 16px;
+    background: rgba(242, 242, 242, 0.8);
+}
+
+.logo {
+    float: right;
+    width: auto;
+    height: auto;
+    max-height: unset;
+    max-width: 25%;
+}
+
+.title {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+}
+
+.downloads {
+    max-width: 864px;
+    margin: 0 auto;
+}
+
+.download-item.download-item-header > * {
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.download-item > * {
+    border: 0;
+}
+
+.footer select {
+    font-family: inherit;
+    font-size: inherit;
+    color: white;
+    background: black;
+    border: 1px solid white;
+    border-radius: 5px;
+}
+
+@media (max-width: 560px) {
+    .logo-and-title {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+
+    .title h1 {
+        margin: 0;
+    }
+
+    .title h2 {
+        margin: 0;
+    }
+
+    .logo {
+        float: none;
+        width: 64px;
+        max-width: 80%;
+    }
+
+    .download-item {
+        border-bottom: 1px solid #aaa;
+    }
+
+    .dli--file-size {
+        font-size: 0.8em;
+        font-style: normal;
+    }
+
+    .dli--modified-date {
+        font-size: 0.8em;
+        font-style: normal;
+    }
+
+}

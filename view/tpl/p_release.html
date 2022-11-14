@@ -1,0 +1,132 @@
+{% extends "page.html" %}
+
+{% block title %} {{ product_title }} - {{ product_version }} {% endblock %}
+
+{% block header_start %}
+<ul class="release-wheel">
+    {% match product_version_prev %}
+    {% when Some with (product_version_prev) %}
+        <li class="prev-release"><a href="/{{ product_key }}/{{ product_version_prev }}">{{ product_version_prev }}</a></li>
+    {% when None %}
+    {% endmatch %}
+    <li class="current-release">{{ product_version }}</li>
+    {% match product_version_next %}
+    {% when Some with (product_version_next) %}
+        <li class="next-release"><a href="/{{ product_key }}/{{ product_version_next }}">{{ product_version_next }}</a></li>
+    {% when None %}
+    {% endmatch %}
+</ul>
+{% endblock %}
+
+{% block header_end %}
+<ul>
+    <li><a href="/{{ product_key }}">All Releases</a></li>
+    <li><a href="/">All Products</a></li>
+    <li><a href="{{ home_url }}">Home</a></li>
+</ul>
+{% endblock %}
+
+{% block content %}
+<div class="upper">
+    <div class="logo-and-title">
+        {% match product_icon %}
+        {% when Some with (icon_path) %}
+            <img src="{{ default_endpoint_url }}/{{ icon_path }}" alt="{{ product_title }}" class="logo">
+        {% when None %}
+        {% endmatch %}
+        <div class="title">
+            <h1>{{ product_title }}</h1>
+            <h2>{{ product_version }}</h2>
+        </div>
+    </div>
+    <div class="release-description">
+        {% match description %}
+        {% when Some with (description) %}
+        <div class="description-block">
+            {{ description|markdown }}
+        </div>
+        {% when None %}
+        {% endmatch %}
+        {% for (ekey, etext) in extra_description %}
+        <h3>{{ ekey }}</h3>
+        <div class="description-block">
+            {{ etext|markdown }}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+<div class="lower">
+    <h3>Downloads</h3>
+    <div class="downloads">
+        <div class="download-item download-item-header">
+            <div class="dli--icon"></div>
+            <h4 class="dli--file-name">
+                <span class="file-name--title">File Name</span>
+                <span class="file-name--name"></span>
+                <span class="file-name--extra"></span>
+            </h4>
+            <div class="dli--file-size">File Size</div>
+            <div class="dli--modified-date">Last Modified</div>
+        </div>
+        {% for artifact in artifacts %}
+        <div class="download-item">
+            <div class="dli--icon">
+                {% match artifact.icon_path %}
+                {% when Some with (icon_path) %}
+                    <img src="/static/theme/{{ theme_name }}/icons/{{ icon_path }}" alt="I">
+                {% when None %}
+                {% endmatch %}
+            </div>
+            <h4 class="dli--file-name">
+                <span class="file-name--title">
+                    <a {{ artifact.urls|endpoint_links(auto_endpoint)|escape("none") }}>
+                        {{ artifact.display_title() }}
+                    </a>
+                </span>
+                <span class="file-name--name">
+                    <a {{ artifact.urls|endpoint_links(auto_endpoint)|escape("none") }}>
+                        {{ artifact.display_subtitle() }}
+                    </a>
+                </span>
+                <span class="file-name--extra">
+                    {% match artifact.extra_info_markdown %}
+                    {% when Some with (extra_info_markdown) %}
+                        {{ extra_info_markdown|markdown }}
+                    {% when None %}
+                    {% endmatch %}
+                </span>
+            </h4>
+            <div class="dli--file-size">
+                {% match artifact.file_size %}
+                {% when Some with (size) %}
+                    {{ size }}
+                {% when None %}
+                {% endmatch %}
+            </div>
+            <div class="dli--modified-date">
+                {% match artifact.modified_date %}
+                {% when Some with (modified_date) %}
+                    {{ modified_date }}
+                {% when None %}
+                {% endmatch %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block footer %}
+<div class="footer">
+    <noscript>The mirror {{ auto_endpoint }} has been selected. You need JavaScript enabled to select a mirror.</noscript>
+    <div class="mirror-select">
+        <label for="mirror-select">Download Mirror:</label>
+        <select id="mirror-select">
+            {% for (key, display_name) in endpoints %}
+            <option value="{{ key }}" {% if key.as_ref() == auto_endpoint %}selected{% endif %}>{{ display_name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+</div>
+<script src="/static/base/mirror-select.js"></script>
+{% endblock %}

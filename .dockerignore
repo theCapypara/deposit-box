@@ -1,0 +1,7 @@
+/target/
+/.idea
+/geoip.mmdb
+/Dockerfile
+/.env
+/.env.example
+/.gitignore
