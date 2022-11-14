@@ -2,6 +2,7 @@ pub mod fallback;
 pub mod r#impl;
 
 use crate::r#impl::artifacttype::fallback::FallbackArtifactType;
+#[cfg(feature = "flatpak")]
 use crate::r#impl::artifacttype::r#impl::flathub::FLATHUB_KEY;
 use crate::r#impl::artifacttype::r#impl::*;
 use crate::r#impl::config::Endpoints;
@@ -10,7 +11,6 @@ use askama::filters::filesizeformat;
 use async_trait::async_trait;
 use indexmap::IndexMap;
 use log::warn;
-use s3::serde_types::ListBucketResult;
 use serde_yaml::Value;
 use std::borrow::Cow;
 use std::collections::{BTreeMap, HashMap};
@@ -103,7 +103,7 @@ pub async fn artifacts_collect(
     version: &NamedVersion<'_>,
     ats: &ArtifactTypes,
     endpoints: &Endpoints,
-    #[cfg(feature = "s3_bucket_list")] bucket_list: Option<Vec<ListBucketResult>>,
+    #[cfg(feature = "s3_bucket_list")] bucket_list: Option<Vec<s3::serde_types::ListBucketResult>>,
 ) -> Vec<RenderableArtifact<'static>> {
     let mut renderables = Vec::new();
     for (key, download) in &version.info().downloads {
@@ -120,7 +120,7 @@ pub async fn artifacts_collect(
         {
             Ok(artifact_info) => {
                 let mut modified_date = None;
-                let mut file_size = None;
+                let mut file_size: Option<u64> = None;
                 #[cfg(feature = "s3_bucket_list")]
                 if let Some(file_path) = artifact_info.file_path(product_name, version.name()) {
                     if let Some((out_modified_date, out_file_size)) =
@@ -184,7 +184,7 @@ async fn get_artifact_info<'a>(
 
 #[cfg(feature = "s3_bucket_list")]
 fn get_file_metadata<'a>(
-    bucket_list: &'a Option<Vec<ListBucketResult>>,
+    bucket_list: &'a Option<Vec<s3::serde_types::ListBucketResult>>,
     file_path: &str,
 ) -> Option<(&'a str, u64)> {
     if let Some(bucket_list) = bucket_list {

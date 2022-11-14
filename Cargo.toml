@@ -5,7 +5,7 @@ edition = "2021"
 
 [features]
 default = [ "geoip", "pypi", "flatpak", "github", "s3_bucket_list" ]
-s3_bucket_list = [ "rust-s3", "chrono" ]
+s3_bucket_list = [ "rust-s3" ]
 geoip = [ "geoutils", "public-ip", "maxminddb" ]
 pypi = [ ]
 flatpak = [ ]
@@ -22,7 +22,7 @@ reqwest = "0.11"
 serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.9"
 rust-s3 = { version = "0.32", optional = true }
-chrono = { version = "0.4", optional = true }
+chrono = "0.4"
 # This is past 0.11.0 with updated Rocket to 0.5
 askama = { git = "https://github.com/djc/askama.git", rev = "5cdffd6e0e9eb0a408cec6e5a143231e139970fe", features = ["markdown", "with-rocket"] }
 askama_rocket = { git = "https://github.com/djc/askama.git", rev = "5cdffd6e0e9eb0a408cec6e5a143231e139970fe" }
