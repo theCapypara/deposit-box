@@ -1,4 +1,4 @@
-FROM rust:alpine as builder
+/EXPOFROM rust:alpine as builder
 
 RUN apk add --no-cache musl-dev openssl openssl-dev pkgconfig glib-dev
 
@@ -22,7 +22,7 @@ FROM alpine:latest
 
 ARG APP=/usr/src/app
 
-EXPOSE 3000
+EXPOSE 34434
 
 ENV TZ=Etc/UTC \
     APP_USER=depositbox \

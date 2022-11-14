@@ -125,8 +125,10 @@ impl Config {
         &self.release_info
     }
 
-    fn init_env() -> dotenv::Result<PathBuf> {
+    fn init_env() -> dotenv::Result<()> {
         dotenv()
+            .map(|_| ())
+            .or_else(|err| if err.not_found() { Ok(()) } else { Err(err) })
     }
 
     fn check_env(endpoints: &Endpoints) -> bool {
