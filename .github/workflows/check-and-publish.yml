@@ -54,7 +54,7 @@ jobs:
         with:
           toolchain: stable
           profile: minimal
-          components: rustdoc, rust-src
+          components: rust-src
           override: true
 
       - name: Run Cargo Doc
