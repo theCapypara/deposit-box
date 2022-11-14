@@ -27,8 +27,7 @@ impl ArtifactType for GithubArtifactType {
                         version
                             .info()
                             .changelog
-                            .as_ref()
-                            .map(String::as_str)
+                            .as_deref()
                             .unwrap_or_else(|| version.name())
                             .to_string(),
                     )
@@ -39,8 +38,7 @@ impl ArtifactType for GithubArtifactType {
                                 if let Some(changelog_section) = version.info().changelog_section {
                                     let split_changelog = release_description
                                         .split("---\r\n")
-                                        .skip(changelog_section as usize)
-                                        .next();
+                                        .nth(changelog_section as usize);
                                     if let Some(split_changelog) = split_changelog {
                                         description_map.insert(
                                             "Changelog".into(),

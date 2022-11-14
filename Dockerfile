@@ -1,7 +1,5 @@
 FROM rust:alpine as builder
 
-ARG FEATURES_FLAG="--features flatpak,github"
-
 RUN apk add --no-cache musl-dev openssl openssl-dev pkgconfig glib-dev
 
 WORKDIR /src
@@ -9,14 +7,14 @@ RUN USER=root cargo new --bin deposit-box
 WORKDIR /src/deposit-box
 COPY ./Cargo.lock ./Cargo.lock
 COPY ./Cargo.toml ./Cargo.toml
-RUN cargo build --release $FEATURES_FLAG  # collects dependencies
+RUN cargo build --release  # collects dependencies
 RUN rm src/*.rs  # removes the `cargo new` generated files.
 
 ADD . ./
 
 RUN rm ./target/release/deps/deposit_box*
 
-RUN cargo build --release $FEATURES_FLAG
+RUN cargo build --release
 
 RUN strip /src/deposit-box/target/release/deposit-box
 

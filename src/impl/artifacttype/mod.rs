@@ -142,7 +142,7 @@ pub async fn artifacts_collect(
                     file_size: file_size
                         .and_then(|file_size| filesizeformat(&file_size).ok())
                         .map(Into::into),
-                    urls: artifact_info.urls(product_name, version.name(), &endpoints),
+                    urls: artifact_info.urls(product_name, version.name(), endpoints),
                     extra_info_markdown: artifact_info
                         .extra_info_markdown
                         .map(|s| s.to_string())
@@ -190,7 +190,7 @@ fn get_file_metadata<'a>(
     if let Some(bucket_list) = bucket_list {
         for page in bucket_list {
             for object in &page.contents {
-                if &object.key == file_path {
+                if object.key == file_path {
                     return Some((&object.last_modified, object.size));
                 }
             }
@@ -205,8 +205,6 @@ pub enum ArtifactError {
         "The server did not know how to handle the artifact type and no fallback was provided."
     )]
     NoFallback,
-    #[error("{0}")]
-    Message(String),
     #[error(
         "The product did not have the configuration for this artifact type in the correct format."
     )]

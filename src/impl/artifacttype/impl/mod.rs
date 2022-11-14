@@ -1,5 +1,5 @@
 #[cfg(feature = "flatpak")]
-pub(crate) mod flathub;
+pub mod flathub;
 #[cfg(feature = "github")]
 mod github;
 mod mac64;

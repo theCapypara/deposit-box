@@ -31,12 +31,6 @@ impl ReleaseMap {
         self.0.get(k).map(move |v| NamedVersion(k.into(), v.into()))
     }
 
-    /// Iterate this map.
-    #[inline]
-    pub fn iter(&self) -> impl Iterator<Item = NamedVersion> {
-        self.0.iter().map(|item| item.into())
-    }
-
     /// Returns the latest version or None if the map is empty.
     #[inline]
     pub fn latest(&self) -> Option<NamedVersion> {

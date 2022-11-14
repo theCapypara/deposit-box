@@ -116,7 +116,7 @@ impl<'r, 'o: 'r> Responder<'r, 'r> for Flatpakref<'r> {
 
 impl<'a> From<Flatpakref<'a>> for String {
     fn from(fr: Flatpakref<'a>) -> Self {
-        return format!(
+        format!(
             "[Flatpak Ref]\n\
             Version=1\n\
             Name={}\n\
@@ -125,6 +125,6 @@ impl<'a> From<Flatpakref<'a>> for String {
             Url={}\n\
             RuntimeRepo={}\n",
             fr.name, fr.branch, fr.title, fr.url, fr.runtime_repo
-        );
+        )
     }
 }

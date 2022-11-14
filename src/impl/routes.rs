@@ -47,14 +47,14 @@ pub async fn get_product<'a>(
                 product_data.versions.latest().unwrap().name().to_string(),
             ))
         } else {
-            Ok(GetProductResponder::Template(TemplateReleases {
+            Ok(GetProductResponder::Template(Box::new(TemplateReleases {
                 self_name: config.self_name().into(),
                 theme_name: config.theme().into(),
                 home_url: config.home_url().into(),
                 default_endpoint_url: config.default_endpoint_url().into(),
                 product_key: product.into(),
                 product: product_data,
-            }))
+            })))
         }
     } else {
         Err(Status::NotFound)
@@ -230,7 +230,7 @@ pub(crate) async fn get_storage_config(config: &State<Config>) -> Result<Product
 
 pub enum GetProductResponder<'a> {
     LatestRelease(String),
-    Template(TemplateReleases<'a>),
+    Template(Box<TemplateReleases<'a>>),
 }
 
 impl<'r> Responder<'r, 'r> for GetProductResponder<'r> {

@@ -44,6 +44,7 @@ pub struct Config {
 }
 
 impl Config {
+    #[allow(clippy::result_unit_err)]
     pub fn load(artifacttypes: ArtifactTypes) -> Result<Self, ()> {
         debug!("-- Loading config from environment and .env file... --");
 
@@ -316,10 +317,6 @@ impl Endpoints {
         self._loaded.as_slice()
     }
 
-    pub fn get_by_key<S: AsRef<str>>(&self, key: S) -> Option<&Endpoint> {
-        self._loaded_map.get(key.as_ref())
-    }
-
     fn do_load_from_env() -> Vec<Endpoint> {
         enum InsertPos {
             FirstDisplayName,
@@ -334,7 +331,7 @@ impl Endpoints {
         fn parse_loc(input: String) -> Location {
             #[cfg(feature = "geoip")]
             {
-                let parts: Vec<&str> = input.split(" ").collect();
+                let parts: Vec<&str> = input.split(' ').collect();
                 if parts.len() != 2 {
                     panic!(
                         "failed to parse location string: {}. needs to have two parts.",
