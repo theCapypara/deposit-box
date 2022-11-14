@@ -36,6 +36,7 @@ RUN apk update \
     && rm -rf /var/cache/apk/*
 
 COPY --from=builder /src/deposit-box/target/release/deposit-box ${APP}/deposit-box
+COPY view/static view/static
 
 RUN chown -R $APP_USER:$APP_USER ${APP}
 
