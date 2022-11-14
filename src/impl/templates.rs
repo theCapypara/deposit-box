@@ -53,6 +53,7 @@ pub struct TemplateRelease<'a> {
     pub product_version: Cow<'a, str>,
     pub product_version_prev: Option<Cow<'a, str>>,
     pub product_version_next: Option<Cow<'a, str>>,
+    pub release_date: Cow<'a, str>,
     pub product_icon: Option<Cow<'a, str>>,
     pub description: Option<Cow<'a, str>>,
     pub extra_description: IndexMap<Cow<'a, str>, Cow<'a, str>>,

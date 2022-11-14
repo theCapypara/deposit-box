@@ -111,6 +111,7 @@ pub async fn get_release<'a>(
                 product_version: named_version.name().to_string().into(),
                 product_version_prev: product_version_prev.map(Clone::clone).map(Into::into),
                 product_version_next: product_version_next.map(Clone::clone).map(Into::into),
+                release_date: named_version.info().date.clone().into(),
                 product_icon: product_data.icon_path.map(Into::into),
                 description: named_version
                     .info()
