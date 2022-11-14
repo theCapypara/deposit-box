@@ -3,10 +3,13 @@ use crate::r#impl::config::Config;
 use crate::r#impl::release_map::NamedVersion;
 use crate::r#impl::storage::ProductsConfig;
 use crate::r#impl::templates::*;
+use async_trait::async_trait;
 use cached::proc_macro::cached;
-use log::error;
+use log::{error, warn};
 use rocket::http::uri::Host;
 use rocket::http::{ContentType, Header, Status};
+use rocket::outcome::Outcome::{Forward, Success};
+use rocket::request::{FromRequest, Outcome};
 use rocket::response::{Redirect, Responder};
 use rocket::{catch, get, Request, State};
 use std::io::Cursor;
@@ -64,7 +67,7 @@ pub async fn get_product<'a>(
 #[get("/<product>/<release>")]
 pub async fn get_release<'a>(
     host: &'a Host<'a>,
-    client_addr: IpAddr,
+    client_addr: ForwardedIpAddr,
     config: &'a State<Config>,
     product: &'a str,
     release: &'a str,
@@ -141,7 +144,7 @@ pub async fn get_release<'a>(
                     .iter()
                     .map(|s| (s.key.as_str().into(), s.display_name.as_str().into()))
                     .collect(),
-                auto_endpoint: config.find_best_location(client_addr).key.clone().into(),
+                auto_endpoint: config.find_best_location(client_addr.0).key.clone().into(),
             })
         } else {
             Err(Status::NotFound)
@@ -279,5 +282,28 @@ impl<'r> Responder<'r, 'r> for BodyAndHeaders {
         Ok(builder
             .sized_body(self.body.len(), Cursor::new(self.body))
             .finalize())
+    }
+}
+
+pub struct ForwardedIpAddr(IpAddr);
+
+#[async_trait]
+impl<'r> FromRequest<'r> for ForwardedIpAddr {
+    type Error = std::convert::Infallible;
+
+    async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        let ip = request
+            .headers()
+            .get_one("X-Forwarded-For")
+            .and_then(|ip| {
+                ip.parse()
+                    .map_err(|_| warn!("'X-Forwarded-For' header is malformed: {}", ip))
+                    .ok()
+            })
+            .or_else(|| request.client_ip());
+        match ip {
+            Some(addr) => Success(Self(addr)),
+            None => Forward(()),
+        }
     }
 }
