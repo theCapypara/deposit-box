@@ -9,7 +9,7 @@ mod win32;
 mod win64;
 
 #[cfg(feature = "flatpak")]
-pub use flathub::FlathubArtifactType;
+pub use flathub::{FlathubArtifactType, FlathubBeta, FlathubBranch, FlathubStable};
 #[cfg(feature = "github")]
 pub use github::GithubArtifactType;
 pub use mac64::Mac64ArtifactType;

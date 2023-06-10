@@ -12,15 +12,29 @@ use rocket::{Request, Response, State};
 use serde_yaml::Value;
 use std::borrow::Cow;
 use std::io::Cursor;
+use std::marker::PhantomData;
 
-pub struct FlathubArtifactType;
-pub const FLATHUB_KEY: &str = "flathub";
-const FLATHUB_STABLE: &str = "stable";
+pub trait FlathubBranch: Send + Sync {
+    const ARTIFACT_KEY: &'static str;
+    const BRANCH: &'static str;
+}
+pub struct FlathubStable;
+impl FlathubBranch for FlathubStable {
+    const ARTIFACT_KEY: &'static str = "flathub";
+    const BRANCH: &'static str = "stable";
+}
+pub struct FlathubBeta;
+impl FlathubBranch for FlathubBeta {
+    const ARTIFACT_KEY: &'static str = "flathub_beta";
+    const BRANCH: &'static str = "beta";
+}
+
+pub struct FlathubArtifactType<T: FlathubBranch>(pub(crate) PhantomData<T>);
 const FLATHUB_URL: &str = "https://dl.flathub.org/repo/";
 const FLATHUB_RUNTIME_REPO: &str = "https://dl.flathub.org/repo/flathub.flatpakrepo";
 
 #[async_trait]
-impl ArtifactType for FlathubArtifactType {
+impl<T: FlathubBranch> ArtifactType for FlathubArtifactType<T> {
     async fn describe<'a>(
         &self,
         _description_map: &mut IndexMap<Cow<'a, str>, Cow<'a, str>>,
@@ -41,7 +55,7 @@ impl ArtifactType for FlathubArtifactType {
                 let mut info = ArtifactInfo::new_url(
                     "Linux Flatpak",
                     Some("flatpak.png".into()),
-                    format!("/flatpak/{}/{}", product_name, version).into(),
+                    format!("/{}/{}/{}", T::ARTIFACT_KEY, product_name, version).into(),
                 );
                 info.set_extra_info_markdown(
                     format!(
@@ -60,7 +74,7 @@ impl ArtifactType for FlathubArtifactType {
     }
 }
 
-#[get("/flatpak/<product>/<release>")]
+#[get("/flathub/<product>/<release>")]
 pub async fn get_flatpakref<'a>(
     host: &'a Host<'a>,
     config: &'a State<Config>,
@@ -70,24 +84,59 @@ pub async fn get_flatpakref<'a>(
     if is_release_info(config, host) {
         Err(Status::NotFound)
     } else {
-        let mut products = get_storage_config(config).await?.products;
-        if let Some(product_data) = products.remove(product) {
-            let setting = product_data.settings.get(FLATHUB_KEY);
-            // TODO: Flatpakref doesn't really allow specifying a special commit, so we always serve latest for now.
-            if let Some(Value::String(flatpak_id)) = setting {
-                Ok(Flatpakref {
-                    name: flatpak_id.to_string(),
-                    branch: FLATHUB_STABLE,
-                    title: product_data.name,
-                    url: FLATHUB_URL,
-                    runtime_repo: FLATHUB_RUNTIME_REPO,
-                })
-            } else {
-                Err(Status::NotFound)
-            }
+        get_flatpakref_impl(
+            config,
+            product,
+            FlathubStable::ARTIFACT_KEY,
+            FlathubStable::BRANCH,
+        )
+        .await
+    }
+}
+
+#[get("/flathub_beta/<product>/<release>")]
+pub async fn get_flatpakref_beta<'a>(
+    host: &'a Host<'a>,
+    config: &'a State<Config>,
+    product: &'a str,
+    #[allow(unused)] release: &'a str,
+) -> Result<Flatpakref<'a>, Status> {
+    if is_release_info(config, host) {
+        Err(Status::NotFound)
+    } else {
+        get_flatpakref_impl(
+            config,
+            product,
+            FlathubBeta::ARTIFACT_KEY,
+            FlathubBeta::BRANCH,
+        )
+        .await
+    }
+}
+
+async fn get_flatpakref_impl<'a>(
+    config: &'a State<Config>,
+    product: &'a str,
+    key: &'static str,
+    branch: &'static str,
+) -> Result<Flatpakref<'a>, Status> {
+    let mut products = get_storage_config(config).await?.products;
+    if let Some(product_data) = products.remove(product) {
+        let setting = product_data.settings.get(key);
+        // TODO: Flatpakref doesn't really allow specifying a special commit, so we always serve latest for now.
+        if let Some(Value::String(flatpak_id)) = setting {
+            Ok(Flatpakref {
+                name: flatpak_id.to_string(),
+                branch,
+                title: product_data.name,
+                url: FLATHUB_URL,
+                runtime_repo: FLATHUB_RUNTIME_REPO,
+            })
         } else {
             Err(Status::NotFound)
         }
+    } else {
+        Err(Status::NotFound)
     }
 }
 

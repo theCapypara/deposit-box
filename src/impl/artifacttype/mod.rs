@@ -2,8 +2,6 @@ pub mod fallback;
 pub mod r#impl;
 
 use crate::r#impl::artifacttype::fallback::FallbackArtifactType;
-#[cfg(feature = "flatpak")]
-use crate::r#impl::artifacttype::r#impl::flathub::FLATHUB_KEY;
 use crate::r#impl::artifacttype::r#impl::*;
 use crate::r#impl::config::Endpoints;
 use crate::r#impl::release_map::NamedVersion;
@@ -14,6 +12,7 @@ use log::warn;
 use serde_yaml::Value;
 use std::borrow::Cow;
 use std::collections::{BTreeMap, HashMap};
+use std::marker::PhantomData;
 use thiserror::Error;
 
 /// This key in ArtifactTypes is used as the fallback implementation for unknown
@@ -34,7 +33,15 @@ impl Default for ArtifactTypes {
         let mut m: IndexMap<String, Box<dyn ArtifactType>> = IndexMap::new();
         m.insert(FALLBACK_KEY.into(), Box::new(FallbackArtifactType));
         #[cfg(feature = "flatpak")]
-        m.insert(FLATHUB_KEY.into(), Box::new(FlathubArtifactType));
+        m.insert(
+            FlathubStable::ARTIFACT_KEY.into(),
+            Box::new(FlathubArtifactType::<FlathubStable>(PhantomData)),
+        );
+        #[cfg(feature = "flatpak")]
+        m.insert(
+            FlathubBeta::ARTIFACT_KEY.into(),
+            Box::new(FlathubArtifactType::<FlathubBeta>(PhantomData)),
+        );
         #[cfg(feature = "github")]
         m.insert("github".into(), Box::new(GithubArtifactType));
         m.insert("mac64".into(), Box::new(Mac64ArtifactType));
