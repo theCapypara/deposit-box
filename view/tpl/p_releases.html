@@ -16,11 +16,14 @@
         </div>
     </div>
     <ul class="releases-list">
-        {% for vkey in product.versions.map().keys().rev() %}
-        <li>
-            <a href="/{{ product_key }}/{{ vkey }}">{{ vkey }}</a>
-            {% if loop.first %}
+        {% for version in product.versions.list(pre_release_patterns) %}
+        <li {% if version.is_pre_release %}class="pre-release"{% endif %}>
+            <a href="/{{ product_key }}/{{ version.name }}">{{ version.name }}</a>
+            {% if version.is_latest %}
             <em class="latest">(<a href="/{{ product_key }}/latest">latest</a>)</em>
+            {% endif %}
+            {% if version.is_pre_release %}
+            <em class="pre-release-info">(pre-release)</em>
             {% endif %}
         </li>
         {% endfor %}

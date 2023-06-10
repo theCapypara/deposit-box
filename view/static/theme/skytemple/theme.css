@@ -10,7 +10,6 @@ body, html {
     padding: 0;
     height: 100%;
     font-family: 'Oswald', sans-serif;
-    font-size: 1.2em;
 }
 
 body {
@@ -109,6 +108,19 @@ a:hover, a:active {
     background: black;
     border: 1px solid white;
     border-radius: 5px;
+}
+
+.logo-and-title .pre-release {
+    display: inline-block;
+    border: 1px solid #167f00;
+    background-color: #eaffd9;
+    padding: 5px;
+    border-radius: 5px;
+    font-size: 0.75em;
+}
+
+.releases-list .pre-release {
+    color: #bbb;
 }
 
 @media (max-width: 560px) {

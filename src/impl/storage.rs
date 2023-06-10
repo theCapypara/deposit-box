@@ -4,6 +4,7 @@ use crate::r#impl::release_map::ReleaseMap;
 use cached::proc_macro::cached;
 use indexmap::IndexMap;
 use log::{debug, warn};
+use regex::Regex;
 #[cfg(feature = "s3_bucket_list")]
 use s3::error::S3Error;
 #[cfg(feature = "s3_bucket_list")]
@@ -117,17 +118,26 @@ pub enum StorageError {
     NoBucketFound,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct ProductsConfig {
     pub products: IndexMap<String, Product>,
     #[serde(default)]
     pub banner: Option<Banner>,
+    #[serde(default)]
+    pub pre_release_patterns: Vec<PreReleasePatternEntry>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct Banner {
     pub url_file: String,
     pub image_file: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct PreReleasePatternEntry {
+    #[serde(with = "serde_regex")]
+    pub pattern: Regex,
+    pub display_name: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]

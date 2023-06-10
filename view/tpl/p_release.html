@@ -38,6 +38,14 @@
             <h1>{{ product_title }}</h1>
             <h2>{{ product_version }}</h2>
         </div>
+        {% match pre_release %}
+        {% when Some with (pre_release) %}
+        <div class="pre-release">
+            This is an <strong>{{ pre_release }}</strong> pre-release.<br>
+            It is used to test new features.
+        </div>
+        {% when None %}
+        {% endmatch %}
         <p class="released-on">Released on {{ release_date }}.</p>
     </div>
     <div class="release-description">

@@ -1,5 +1,6 @@
 use crate::r#impl::artifacttype::{artifacts_collect, artifacts_describe};
 use crate::r#impl::config::Config;
+use crate::r#impl::pre_release::parse_pre_release;
 use crate::r#impl::release_map::NamedVersion;
 use crate::r#impl::storage::ProductsConfig;
 use crate::r#impl::templates::*;
@@ -43,11 +44,18 @@ pub async fn get_product<'a>(
     config: &'a State<Config>,
     product: &'a str,
 ) -> Response<GetProductResponder<'a>> {
-    let mut products = get_storage_config(config).await?.products;
+    let storage_config = get_storage_config(config).await?;
+    let mut products = storage_config.products;
+    let pre_release_patterns = storage_config.pre_release_patterns;
     if let Some(product_data) = products.remove(product) {
         if is_release_info(config, host) {
             Ok(GetProductResponder::LatestRelease(
-                product_data.versions.latest().unwrap().name().to_string(),
+                product_data
+                    .versions
+                    .latest(&pre_release_patterns)
+                    .unwrap()
+                    .name()
+                    .to_string(),
             ))
         } else {
             Ok(GetProductResponder::Template(Box::new(TemplateReleases {
@@ -57,6 +65,7 @@ pub async fn get_product<'a>(
                 default_endpoint_url: config.default_endpoint_url().into(),
                 product_key: product.into(),
                 product: product_data,
+                pre_release_patterns,
             })))
         }
     } else {
@@ -75,9 +84,12 @@ pub async fn get_release<'a>(
     if is_release_info(config, host) {
         Err(Status::NotFound)
     } else {
-        let mut products = get_storage_config(config).await?.products;
-        if let Some(product_data) = products.remove(product) {
-            let latest = product_data.versions.latest();
+        let storage_config = get_storage_config(config).await?;
+        let products = &storage_config.products;
+        if let Some(product_data) = products.get(product) {
+            let latest = product_data
+                .versions
+                .latest(&storage_config.pre_release_patterns);
 
             let named_version: NamedVersion = if release == LATEST {
                 latest.as_ref().unwrap().clone()
@@ -110,12 +122,16 @@ pub async fn get_release<'a>(
                 home_url: config.home_url().into(),
                 default_endpoint_url: config.default_endpoint_url().into(),
                 product_key: product.into(),
-                product_title: product_data.name.into(),
+                product_title: product_data.name.to_string().into(),
                 product_version: named_version.name().to_string().into(),
                 product_version_prev: product_version_prev.map(Clone::clone).map(Into::into),
                 product_version_next: product_version_next.map(Clone::clone).map(Into::into),
                 release_date: named_version.info().date.clone().into(),
-                product_icon: product_data.icon_path.map(Into::into),
+                product_icon: product_data
+                    .icon_path
+                    .as_ref()
+                    .map(Clone::clone)
+                    .map(Into::into),
                 description: named_version
                     .info()
                     .description
@@ -128,6 +144,13 @@ pub async fn get_release<'a>(
                     config.artifact_types(),
                 )
                 .await,
+                pre_release: parse_pre_release(
+                    named_version.name(),
+                    &storage_config.pre_release_patterns,
+                )
+                .as_ref()
+                .map(ToString::to_string)
+                .map(Into::into),
                 artifacts: artifacts_collect(
                     product,
                     &product_data.settings,

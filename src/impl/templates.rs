@@ -1,5 +1,5 @@
 use crate::r#impl::artifacttype::RenderableArtifact;
-use crate::r#impl::storage::Product;
+use crate::r#impl::storage::{PreReleasePatternEntry, Product};
 use askama::Template;
 use indexmap::IndexMap;
 use std::borrow::Cow;
@@ -39,6 +39,7 @@ pub struct TemplateReleases<'a> {
     pub default_endpoint_url: Cow<'a, str>,
     pub product_key: Cow<'a, str>,
     pub product: Product,
+    pub pre_release_patterns: Vec<PreReleasePatternEntry>,
 }
 
 #[derive(Template)]
@@ -57,6 +58,7 @@ pub struct TemplateRelease<'a> {
     pub product_icon: Option<Cow<'a, str>>,
     pub description: Option<Cow<'a, str>>,
     pub extra_description: IndexMap<Cow<'a, str>, Cow<'a, str>>,
+    pub pre_release: Option<Cow<'a, str>>,
     pub artifacts: Vec<RenderableArtifact<'a>>,
     pub endpoints: Vec<(Cow<'a, str>, Cow<'a, str>)>,
     pub auto_endpoint: Cow<'a, str>,
