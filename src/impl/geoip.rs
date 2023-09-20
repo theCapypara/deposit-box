@@ -1,4 +1,5 @@
 use crate::r#impl::config::{Endpoint, Endpoints};
+use async_compat::Compat;
 use geoutils::{Distance, Location};
 use itertools::Itertools;
 use log::debug;
@@ -48,7 +49,7 @@ pub fn find_best_location<'a, S: AsRef<[u8]>>(
 }
 
 pub fn self_server_ip() -> IpAddr {
-    let ip_addr = executor::block_on(public_ip::addr());
+    let ip_addr = executor::block_on(Compat::new(public_ip::addr()));
     if let Some(ip_addr) = ip_addr {
         ip_addr
     } else {

@@ -6,7 +6,7 @@ edition = "2021"
 [features]
 default = [ "geoip", "pypi", "flatpak", "github", "s3_bucket_list", "amazon_translate" ]
 s3_bucket_list = [ "rust-s3" ]
-geoip = [ "geoutils", "public-ip", "maxminddb" ]
+geoip = [ "geoutils", "public-ip", "maxminddb", "async-compat" ]
 pypi = [ ]
 flatpak = [ ]
 github = [ "octocrab" ]
@@ -33,7 +33,7 @@ serde_regex = "1.1"
 regex = "1.7"
 lazy_static = "1.4"
 itertools = "0.11"
-cached = { version ="0.45", features = ["async"] }
+cached = { version = "0.45", features = ["async"] }
 thiserror = "1.0"
 indexmap = { version = "2.0", features = ["serde"]}
 version-compare = { version = "0.1", optional = true }
@@ -42,3 +42,4 @@ public-ip = { version = "0.2", optional = true }
 maxminddb = { version = "0.23", optional = true }
 aws-config = { version =  "0.56", optional = true }
 aws-sdk-translate = { version = "0.31", optional = true }
+async-compat = { version = "0.2", optional = true}
