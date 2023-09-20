@@ -50,6 +50,7 @@ pub struct TemplateRelease<'a> {
     pub home_url: Cow<'a, str>,
     pub default_endpoint_url: Cow<'a, str>,
     pub product_key: Cow<'a, str>,
+    pub release_key: Cow<'a, str>,
     pub product_title: Cow<'a, str>,
     pub product_version: Cow<'a, str>,
     pub product_version_prev: Option<Cow<'a, str>>,
@@ -62,6 +63,8 @@ pub struct TemplateRelease<'a> {
     pub artifacts: Vec<RenderableArtifact<'a>>,
     pub endpoints: Vec<(Cow<'a, str>, Cow<'a, str>)>,
     pub auto_endpoint: Cow<'a, str>,
+    pub translate_note_text_en: Option<Cow<'a, str>>,
+    pub translate_note_text: Option<Cow<'a, str>>,
 }
 
 mod filters {

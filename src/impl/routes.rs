@@ -1,9 +1,12 @@
 use crate::r#impl::artifacttype::{artifacts_collect, artifacts_describe};
 use crate::r#impl::config::Config;
+use crate::r#impl::markdown::markdown;
 use crate::r#impl::pre_release::parse_pre_release;
 use crate::r#impl::release_map::NamedVersion;
 use crate::r#impl::storage::ProductsConfig;
 use crate::r#impl::templates::*;
+#[cfg(feature = "amazon_translate")]
+use crate::r#impl::translate::*;
 use async_trait::async_trait;
 use cached::proc_macro::cached;
 use log::{error, warn};
@@ -13,6 +16,8 @@ use rocket::outcome::Outcome::{Forward, Success};
 use rocket::request::{FromRequest, Outcome};
 use rocket::response::{Redirect, Responder};
 use rocket::{catch, get, Request, State};
+use rocket_accept_language::AcceptLanguage;
+use std::borrow::Cow;
 use std::io::Cursor;
 use std::net::IpAddr;
 
@@ -73,13 +78,44 @@ pub async fn get_product<'a>(
     }
 }
 
-#[get("/<product>/<release>")]
-pub async fn get_release<'a>(
+#[get("/<product>/<release>/en", rank = 1)]
+pub async fn get_release_en<'a>(
     host: &'a Host<'a>,
     client_addr: ForwardedIpAddr,
     config: &'a State<Config>,
     product: &'a str,
     release: &'a str,
+) -> Response<TemplateRelease<'a>> {
+    do_get_release(host, client_addr, config, product, release, None).await
+}
+
+#[get("/<product>/<release>")]
+pub async fn get_release<'a>(
+    host: &'a Host<'a>,
+    accept_language: &AcceptLanguage,
+    client_addr: ForwardedIpAddr,
+    config: &'a State<Config>,
+    product: &'a str,
+    release: &'a str,
+) -> Response<TemplateRelease<'a>> {
+    do_get_release(
+        host,
+        client_addr,
+        config,
+        product,
+        release,
+        Some(accept_language),
+    )
+    .await
+}
+
+async fn do_get_release<'a>(
+    host: &'a Host<'a>,
+    client_addr: ForwardedIpAddr,
+    config: &'a State<Config>,
+    product: &'a str,
+    release: &'a str,
+    #[allow(unused)] accept_language: Option<&AcceptLanguage>,
 ) -> Response<TemplateRelease<'a>> {
     if is_release_info(config, host) {
         Err(Status::NotFound)
@@ -116,12 +152,53 @@ pub async fn get_release<'a>(
                 }
             }
 
+            let mut description: Option<Cow<str>> = named_version
+                .info()
+                .description
+                .as_ref()
+                .map(AsRef::as_ref)
+                .map(markdown)
+                .map(Into::into);
+            let mut extra_description = artifacts_describe(
+                &product_data.settings,
+                &named_version,
+                config.artifact_types(),
+            )
+            .await;
+            for v in extra_description.values_mut() {
+                *v = Cow::Owned(markdown(v))
+            }
+            let mut translate_note_text_en = None;
+            let mut translate_note_text = None;
+
+            #[cfg(feature = "amazon_translate")]
+            if let Some(accept_language) = accept_language {
+                if let Some(client) = config.get_translate_client() {
+                    let lang = accept_language.get_first_language();
+                    if let Some(lang) = lang {
+                        if let Err(e) = translate_artifact_release(
+                            lang.as_str(),
+                            client,
+                            &mut description,
+                            &mut extra_description,
+                            &mut translate_note_text_en,
+                            &mut translate_note_text,
+                        )
+                        .await
+                        {
+                            warn!("Failed translating artifact release to {lang}: {e}")
+                        }
+                    }
+                }
+            }
+
             Ok(TemplateRelease {
                 self_name: config.self_name().into(),
                 theme_name: config.theme().into(),
                 home_url: config.home_url().into(),
                 default_endpoint_url: config.default_endpoint_url().into(),
                 product_key: product.into(),
+                release_key: release.into(),
                 product_title: product_data.name.to_string().into(),
                 product_version: named_version.name().to_string().into(),
                 product_version_prev: product_version_prev.map(Clone::clone).map(Into::into),
@@ -132,18 +209,8 @@ pub async fn get_release<'a>(
                     .as_ref()
                     .map(Clone::clone)
                     .map(Into::into),
-                description: named_version
-                    .info()
-                    .description
-                    .as_ref()
-                    .map(Clone::clone)
-                    .map(Into::into),
-                extra_description: artifacts_describe(
-                    &product_data.settings,
-                    &named_version,
-                    config.artifact_types(),
-                )
-                .await,
+                description,
+                extra_description,
                 pre_release: parse_pre_release(
                     named_version.name(),
                     &storage_config.pre_release_patterns,
@@ -168,6 +235,8 @@ pub async fn get_release<'a>(
                     .map(|s| (s.key.as_str().into(), s.display_name.as_str().into()))
                     .collect(),
                 auto_endpoint: config.find_best_location(client_addr.0).key.clone().into(),
+                translate_note_text_en,
+                translate_note_text,
             })
         } else {
             Err(Status::NotFound)

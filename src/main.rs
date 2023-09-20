@@ -22,6 +22,7 @@ pub fn rocket() -> Rocket<Build> {
                     routes![
                         get_root,
                         get_product,
+                        get_release_en,
                         get_release,
                         get_banner,
                         get_banner_png,
@@ -35,6 +36,7 @@ pub fn rocket() -> Rocket<Build> {
                     routes![
                         get_root,
                         get_product,
+                        get_release_en,
                         get_release,
                         get_banner,
                         get_banner_png,

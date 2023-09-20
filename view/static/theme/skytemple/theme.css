@@ -116,11 +116,26 @@ a:hover, a:active {
     background-color: #eaffd9;
     padding: 5px;
     border-radius: 5px;
-    font-size: 0.75em;
+    margin-top: 5px;
+    margin-bottom: 5px;
 }
 
 .releases-list .pre-release {
     color: #bbb;
+}
+
+.logo-and-title .translate-note {
+    display: inline-block;
+    border: 1px solid #bfc3ff;
+    background-color: rgba(217, 239, 255, 0.6);
+    padding: 5px;
+    border-radius: 5px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+.logo-and-title .translate-note .translate-note-small {
+    font-size: 0.75em;
 }
 
 @media (max-width: 560px) {

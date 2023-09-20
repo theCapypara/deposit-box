@@ -273,6 +273,12 @@ impl Config {
     pub async fn get_bucket_list(&self) -> Option<Vec<ListBucketResult>> {
         self.storage.get_bucket_list().await
     }
+
+    #[cfg(feature = "amazon_translate")]
+    /// Returns an Amazon Translate client, if available.
+    pub fn get_translate_client(&self) -> Option<&aws_sdk_translate::Client> {
+        self.translate.as_ref().map(|v| &v.client)
+    }
 }
 
 pub(crate) trait SimpleConfig {

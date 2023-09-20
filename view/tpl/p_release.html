@@ -40,10 +40,23 @@
         </div>
         {% match pre_release %}
         {% when Some with (pre_release) %}
-        <div class="pre-release">
+        <div><div class="pre-release">
             This is an <strong>{{ pre_release }}</strong> pre-release.<br>
             It is used to test new features.
-        </div>
+        </div></div>
+        {% when None %}
+        {% endmatch %}
+        {% match translate_note_text_en %}
+        {% when Some with (translate_note_text_en) %}
+            {% match translate_note_text %}
+            {% when Some with (translate_note_text) %}
+            <div><div class="translate-note">
+                {{ translate_note_text }}<br>
+                <span class="translate-note-small">({{ translate_note_text_en }})</span><br>
+                <a href="/{{ product_key }}/{{ release_key}}/en">View in English.</a>
+            </div></div>
+            {% when None %}
+            {% endmatch %}
         {% when None %}
         {% endmatch %}
         <p class="released-on">Released on {{ release_date }}.</p>
@@ -52,14 +65,14 @@
         {% match description %}
         {% when Some with (description) %}
         <div class="description-block">
-            {{ description|markdown }}
+            {{ description|safe }}
         </div>
         {% when None %}
         {% endmatch %}
         {% for (ekey, etext) in extra_description %}
         <h3>{{ ekey }}</h3>
         <div class="description-block">
-            {{ etext|markdown }}
+            {{ etext|safe }}
         </div>
         {% endfor %}
     </div>
