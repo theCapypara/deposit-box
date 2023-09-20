@@ -2,6 +2,8 @@ use crate::r#impl::artifacttype::ArtifactTypes;
 #[cfg(feature = "geoip")]
 use crate::r#impl::geoip::{find_best_location, self_server_ip};
 use crate::r#impl::storage::{ProductsConfig, Storage, StorageError};
+#[cfg(feature = "amazon_translate")]
+use crate::r#impl::translate::TranslateConfig;
 use dotenv::dotenv;
 #[cfg(feature = "geoip")]
 use geoutils::Location;
@@ -41,6 +43,8 @@ pub struct Config {
     theme: String,
     home_url: String,
     self_name: String,
+    #[cfg(feature = "amazon_translate")]
+    translate: Option<TranslateConfig>,
 }
 
 impl Config {
@@ -100,6 +104,7 @@ impl Config {
             self_name: SelfName::get_checked()
                 .ok()
                 .unwrap_or_else(SelfName::default_value),
+            translate: TranslateConfig::get(),
         };
 
         if !Self::check_env(&slf.endpoints) {
@@ -270,7 +275,7 @@ impl Config {
     }
 }
 
-trait SimpleConfig {
+pub(crate) trait SimpleConfig {
     const VAR_NAME: &'static str;
 
     fn get() -> String {

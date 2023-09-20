@@ -7,3 +7,5 @@ pub mod release_map;
 pub mod routes;
 pub mod storage;
 pub mod templates;
+#[cfg(feature = "amazon_translate")]
+mod translate;
