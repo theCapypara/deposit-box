@@ -186,7 +186,7 @@ async fn do_get_release<'a>(
                         )
                         .await
                         {
-                            warn!("Failed translating artifact release to {lang}: {e}")
+                            warn!("Failed translating artifact release to {lang}: {e:?}")
                         }
                     }
                 }
