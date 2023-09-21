@@ -104,6 +104,7 @@ impl Config {
             self_name: SelfName::get_checked()
                 .ok()
                 .unwrap_or_else(SelfName::default_value),
+            #[cfg(feature = "amazon_translate")]
             translate: TranslateConfig::get(),
         };
 
