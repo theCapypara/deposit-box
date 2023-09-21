@@ -132,6 +132,7 @@ impl TranslateConfig {
                             None,
                             "deposit_box_env_provider",
                         ))
+                        .region("eu-central-1")
                         .load(),
                 ));
                 let client = aws_sdk_translate::Client::new(&config);
