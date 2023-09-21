@@ -1,4 +1,5 @@
 use crate::r#impl::config::SimpleConfig;
+use async_compat::Compat;
 use aws_sdk_translate::primitives::Blob;
 use aws_sdk_translate::types::{Document, Formality, TranslationSettings};
 use cached::proc_macro::cached;
@@ -84,24 +85,26 @@ async fn _do_translate(
         return Err(TranslateError::UnsupportedLang);
     }
     let content_type = if is_html { "text/html" } else { "text/plain" };
-    let doc = client
-        .translate_document()
-        .set_source_language_code(Some("en".into()))
-        .set_target_language_code(Some(lang.into()))
-        .set_document(Some(
-            Document::builder()
-                .set_content(Some(Blob::new(input.as_bytes())))
-                .set_content_type(Some(content_type.into()))
-                .build(),
-        ))
-        .set_settings(Some(
-            TranslationSettings::builder()
-                .set_formality(Some(Formality::Informal))
-                .build(),
-        ))
-        .send()
-        .await
-        .map_err(|e| TranslateError::AwsError(e.to_string()))?;
+    let doc = Compat::new(
+        client
+            .translate_document()
+            .set_source_language_code(Some("en".into()))
+            .set_target_language_code(Some(lang.into()))
+            .set_document(Some(
+                Document::builder()
+                    .set_content(Some(Blob::new(input.as_bytes())))
+                    .set_content_type(Some(content_type.into()))
+                    .build(),
+            ))
+            .set_settings(Some(
+                TranslationSettings::builder()
+                    .set_formality(Some(Formality::Informal))
+                    .build(),
+            ))
+            .send(),
+    )
+    .await
+    .map_err(|e| TranslateError::AwsError(e.to_string()))?;
     let doc_doc = doc
         .translated_document()
         .ok_or(TranslateError::NoDocument)?;
@@ -120,7 +123,7 @@ impl TranslateConfig {
         let key = TranslateAwsSecretAccessKey::get_checked();
         match (key_id, key) {
             (Ok(key_id), Ok(key)) => {
-                let config = executor::block_on(
+                let config = executor::block_on(Compat::new(
                     aws_config::ConfigLoader::default()
                         .credentials_provider(aws_sdk_translate::config::Credentials::new(
                             key_id,
@@ -130,7 +133,7 @@ impl TranslateConfig {
                             "deposit_box_env_provider",
                         ))
                         .load(),
-                );
+                ));
                 let client = aws_sdk_translate::Client::new(&config);
                 debug!("Loaded AWS Translate SDK client.");
                 Some(TranslateConfig { client })
