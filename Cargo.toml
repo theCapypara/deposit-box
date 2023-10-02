@@ -28,7 +28,7 @@ chrono = "0.4"
 # This is past 0.11.0 with updated Rocket to 0.5
 askama = { git = "https://github.com/djc/askama.git", rev = "5cdffd6e0e9eb0a408cec6e5a143231e139970fe", features = ["markdown", "with-rocket"] }
 askama_rocket = { git = "https://github.com/djc/askama.git", rev = "5cdffd6e0e9eb0a408cec6e5a143231e139970fe" }
-octocrab = { version = "0.30", optional = true }
+octocrab = { version = "0.31", optional = true }
 dotenv = "0.15"
 serde_regex = "1.1"
 regex = "1.7"
