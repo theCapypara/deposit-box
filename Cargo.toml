@@ -31,7 +31,7 @@ askama_rocket = { git = "https://github.com/djc/askama.git", rev = "5cdffd6e0e9e
 octocrab = { version = "0.31", optional = true }
 dotenv = "0.15"
 serde_regex = "1.1"
-regex = "1.7"
+regex = "1.9"
 lazy_static = "1.4"
 itertools = "0.11"
 cached = { version = "0.46", features = ["async"] }
