@@ -403,9 +403,9 @@ dependencies = [
 
 [[package]]
 name = "aws-sdk-translate"
-version = "0.32.0"
+version = "0.33.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "479a0098229e4346d101e7170ce73b52d352036e25de2932867f2634be37c521"
+checksum = "fc4a37674add1d56a2e0dc7c5cbe41b8db4f352f117dc4ef5c892f3d58344d5b"
 dependencies = [
  "aws-credential-types",
  "aws-http",
