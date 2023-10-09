@@ -43,5 +43,5 @@ geoutils = { version = "0.5", optional = true }
 public-ip = { version = "0.2", optional = true }
 maxminddb = { version = "0.23", optional = true }
 aws-config = { version =  "0.56", optional = true }
-aws-sdk-translate = { version = "0.32", optional = true }
+aws-sdk-translate = { version = "0.33", optional = true }
 async-compat = { version = "0.2", optional = true}
