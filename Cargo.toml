@@ -35,7 +35,7 @@ regex = "1.9"
 lazy_static = "1.4"
 itertools = "0.11"
 cached = { version = "0.46", features = ["async"] }
-comrak = { version = "0.18" }
+comrak = { version = "0.20" }
 thiserror = "1.0"
 indexmap = { version = "2.0", features = ["serde"]}
 version-compare = { version = "0.1", optional = true }
