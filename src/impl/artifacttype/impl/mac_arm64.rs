@@ -7,10 +7,10 @@ use indexmap::IndexMap;
 use serde_yaml::Value;
 use std::borrow::Cow;
 
-pub struct Mac64ArtifactType;
+pub struct MacArm64ArtifactType;
 
 #[async_trait]
-impl ArtifactType for Mac64ArtifactType {
+impl ArtifactType for MacArm64ArtifactType {
     async fn describe<'a>(
         &self,
         _description_map: &mut IndexMap<Cow<'a, str>, Cow<'a, str>>,
@@ -29,7 +29,7 @@ impl ArtifactType for Mac64ArtifactType {
         Ok(ArtifactInfo::new_file(
             ArtifactDisplayTitle::Descriptive {
                 file_name: download_value.into(),
-                descriptive_title: "MacOS Intel x86".into(),
+                descriptive_title: "MacOS ARM64".into(),
             },
             Some("mac64.png".into()),
             download_value.into(),

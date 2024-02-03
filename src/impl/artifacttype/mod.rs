@@ -45,6 +45,7 @@ impl Default for ArtifactTypes {
         #[cfg(feature = "github")]
         m.insert("github".into(), Box::new(GithubArtifactType));
         m.insert("mac64".into(), Box::new(Mac64ArtifactType));
+        m.insert("mac_arm64".into(), Box::new(MacArm64ArtifactType));
         #[cfg(feature = "pypi")]
         m.insert("pypi".into(), Box::new(PypiArtifactType));
         m.insert("win32".into(), Box::new(Win32ArtifactType));
