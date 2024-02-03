@@ -1,3 +1,4 @@
+#![allow(unused_imports)] // may want to optimize this later. caused by features.
 #[macro_use]
 extern crate rocket;
 
