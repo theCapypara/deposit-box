@@ -1,5 +1,6 @@
 use crate::r#impl::config::SimpleConfig;
 use async_compat::Compat;
+use aws_config::BehaviorVersion;
 use aws_sdk_translate::primitives::Blob;
 use aws_sdk_translate::types::{Document, Formality, TranslationSettings};
 use cached::proc_macro::cached;
@@ -67,7 +68,7 @@ pub async fn translate_html(
 }
 
 #[cached(
-    type = "SizedCache<String, String>",
+    ty = "SizedCache<String, String>",
     create = "{ SizedCache::with_size(5000) }",
     convert = r#"{ format!("{}::{}::{}", lang, is_html, input) }"#,
     sync_writes = true,
@@ -94,7 +95,8 @@ async fn _do_translate(
                 Document::builder()
                     .set_content(Some(Blob::new(input.as_bytes())))
                     .set_content_type(Some(content_type.into()))
-                    .build(),
+                    .build()
+                    .map_err(|e| TranslateError::AwsError(e.to_string()))?,
             ))
             .set_settings(Some(
                 TranslationSettings::builder()
@@ -108,8 +110,8 @@ async fn _do_translate(
     let doc_doc = doc
         .translated_document()
         .ok_or(TranslateError::NoDocument)?;
-    let doc_blob = doc_doc.content.as_ref().ok_or(TranslateError::NoDocument)?;
-    let doc_string: String = String::from_utf8(doc_blob.as_ref().to_vec())?;
+    let doc_blob = doc_doc.content.as_ref();
+    let doc_string: String = String::from_utf8(doc_blob.to_vec())?;
     Ok(doc_string)
 }
 
@@ -133,6 +135,7 @@ impl TranslateConfig {
                             "deposit_box_env_provider",
                         ))
                         .region("eu-central-1")
+                        .behavior_version(BehaviorVersion::v2024_03_28())
                         .load(),
                 ));
                 let client = aws_sdk_translate::Client::new(&config);

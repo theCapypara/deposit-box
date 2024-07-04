@@ -121,7 +121,7 @@ async fn get_flatpakref_impl<'a>(
     branch: &'static str,
 ) -> Result<Flatpakref<'a>, Status> {
     let mut products = get_storage_config(config).await?.products;
-    if let Some(product_data) = products.remove(product) {
+    if let Some(product_data) = products.swap_remove(product) {
         let setting = product_data.settings.get(key);
         // TODO: Flatpakref doesn't really allow specifying a special commit, so we always serve latest for now.
         if let Some(Value::String(flatpak_id)) = setting {

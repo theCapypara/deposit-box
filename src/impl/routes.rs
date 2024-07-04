@@ -52,7 +52,7 @@ pub async fn get_product<'a>(
     let storage_config = get_storage_config(config).await?;
     let mut products = storage_config.products;
     let pre_release_patterns = storage_config.pre_release_patterns;
-    if let Some(product_data) = products.remove(product) {
+    if let Some(product_data) = products.swap_remove(product) {
         if is_release_info(config, host) {
             Ok(GetProductResponder::LatestRelease(
                 product_data
@@ -201,14 +201,10 @@ async fn do_get_release<'a>(
                 release_key: release.into(),
                 product_title: product_data.name.to_string().into(),
                 product_version: named_version.name().to_string().into(),
-                product_version_prev: product_version_prev.map(Clone::clone).map(Into::into),
-                product_version_next: product_version_next.map(Clone::clone).map(Into::into),
+                product_version_prev: product_version_prev.cloned().map(Into::into),
+                product_version_next: product_version_next.cloned().map(Into::into),
                 release_date: named_version.info().date.clone().into(),
-                product_icon: product_data
-                    .icon_path
-                    .as_ref()
-                    .map(Clone::clone)
-                    .map(Into::into),
+                product_icon: product_data.icon_path.clone().map(Into::into),
                 description,
                 extra_description,
                 pre_release: parse_pre_release(
@@ -395,7 +391,7 @@ impl<'r> FromRequest<'r> for ForwardedIpAddr {
             .or_else(|| request.client_ip());
         match ip {
             Some(addr) => Success(Self(addr)),
-            None => Forward(()),
+            None => Forward(Status::Ok),
         }
     }
 }
