@@ -45,6 +45,7 @@ pub struct TemplateReleases<'a> {
 #[derive(Template)]
 #[template(path = "p_release.html")]
 pub struct TemplateRelease<'a> {
+    #[allow(dead_code)] // clippy or askama bug?
     pub self_name: Cow<'a, str>,
     pub theme_name: Cow<'a, str>,
     pub home_url: Cow<'a, str>,
