@@ -73,6 +73,10 @@ a:hover, a:active {
     background: rgba(242, 242, 242, 0.8);
 }
 
+.lower.level-2 {
+    background: rgba(220, 220, 220, 0.8);
+}
+
 .logo {
     float: right;
     width: auto;

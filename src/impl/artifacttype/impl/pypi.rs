@@ -1,5 +1,6 @@
 use crate::r#impl::artifacttype::{ArtifactError, ArtifactInfo, ArtifactType};
 use crate::r#impl::release_map::NamedVersion;
+use crate::r#impl::storage::DownloadSpec;
 use async_trait::async_trait;
 use indexmap::IndexMap;
 use serde_yaml::Value;
@@ -21,7 +22,7 @@ impl ArtifactType for PypiArtifactType {
         &self,
         _product_name: &'a str,
         version: &'a str,
-        _download_value: &'a str,
+        _download_spec: &'a DownloadSpec,
         setting: Option<&'a Value>,
     ) -> Result<ArtifactInfo<'a>, ArtifactError> {
         match setting {

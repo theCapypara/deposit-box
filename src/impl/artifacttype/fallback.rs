@@ -1,5 +1,6 @@
 use crate::r#impl::artifacttype::{ArtifactError, ArtifactInfo, ArtifactType};
 use crate::r#impl::release_map::NamedVersion;
+use crate::r#impl::storage::DownloadSpec;
 use async_trait::async_trait;
 use indexmap::IndexMap;
 use serde_yaml::Value;
@@ -21,13 +22,13 @@ impl ArtifactType for FallbackArtifactType {
         &self,
         _product_name: &'a str,
         _version: &'a str,
-        download_value: &'a str,
+        download_spec: &'a DownloadSpec,
         _setting: Option<&'a Value>,
     ) -> Result<ArtifactInfo<'a>, ArtifactError> {
         Ok(ArtifactInfo::new_file(
-            download_value,
+            download_spec.url(),
             None,
-            download_value.into(),
+            download_spec.url().into(),
         ))
     }
 }

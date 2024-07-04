@@ -5,6 +5,7 @@ use crate::r#impl::artifacttype::fallback::FallbackArtifactType;
 use crate::r#impl::artifacttype::r#impl::*;
 use crate::r#impl::config::Endpoints;
 use crate::r#impl::release_map::NamedVersion;
+use crate::r#impl::storage::DownloadSpec;
 use askama::filters::filesizeformat;
 use async_trait::async_trait;
 use indexmap::IndexMap;
@@ -67,7 +68,7 @@ pub trait ArtifactType: Send + Sync {
         &self,
         product_name: &'a str,
         version: &'a str,
-        download_value: &'a str,
+        download_spec: &'a DownloadSpec,
         setting: Option<&'a Value>,
     ) -> Result<ArtifactInfo<'a>, ArtifactError>;
 }
@@ -112,8 +113,12 @@ pub async fn artifacts_collect(
     ats: &ArtifactTypes,
     endpoints: &Endpoints,
     #[cfg(feature = "s3_bucket_list")] bucket_list: Option<Vec<s3::serde_types::ListBucketResult>>,
-) -> Vec<RenderableArtifact<'static>> {
-    let mut renderables = Vec::new();
+) -> (
+    Vec<RenderableArtifact<'static>>,
+    Vec<RenderableArtifact<'static>>,
+) {
+    let mut supported = Vec::new();
+    let mut unsupported = Vec::new();
     for (key, download) in &version.info().downloads {
         // TODO: Async could be improved here.
         match get_artifact_info(
@@ -138,7 +143,12 @@ pub async fn artifacts_collect(
                         file_size = Some(out_file_size);
                     }
                 }
-                renderables.push(RenderableArtifact {
+                let target = if download.is_unsupported() {
+                    &mut unsupported
+                } else {
+                    &mut supported
+                };
+                target.push(RenderableArtifact {
                     icon_path: artifact_info
                         .icon()
                         .map(ToString::to_string)
@@ -166,7 +176,7 @@ pub async fn artifacts_collect(
             ),
         }
     }
-    renderables
+    (supported, unsupported)
 }
 
 async fn get_artifact_info<'a>(
@@ -174,16 +184,16 @@ async fn get_artifact_info<'a>(
     key: &str,
     product_name: &'a str,
     version_name: &'a str,
-    download_value: &'a str,
+    download_spec: &'a DownloadSpec,
     setting: Option<&'a Value>,
 ) -> Result<ArtifactInfo<'a>, ArtifactError> {
     if let Some(at_info) = ats.0.get(key) {
         at_info
-            .get_artifact(product_name, version_name, download_value, setting)
+            .get_artifact(product_name, version_name, download_spec, setting)
             .await
     } else if let Some(at_fallback) = ats.0.get(FALLBACK_KEY) {
         at_fallback
-            .get_artifact(product_name, version_name, download_value, setting)
+            .get_artifact(product_name, version_name, download_spec, setting)
             .await
     } else {
         Err(ArtifactError::NoFallback)

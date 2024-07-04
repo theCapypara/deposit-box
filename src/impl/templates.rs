@@ -60,11 +60,20 @@ pub struct TemplateRelease<'a> {
     pub description: Option<Cow<'a, str>>,
     pub extra_description: IndexMap<Cow<'a, str>, Cow<'a, str>>,
     pub pre_release: Option<Cow<'a, str>>,
-    pub artifacts: Vec<RenderableArtifact<'a>>,
+    pub downloads: DownloadGridTemplate<'a>,
+    pub downloads_unsupported: Option<DownloadGridTemplate<'a>>,
     pub endpoints: Vec<(Cow<'a, str>, Cow<'a, str>)>,
     pub auto_endpoint: Cow<'a, str>,
     pub translate_note_text_en: Option<Cow<'a, str>>,
     pub translate_note_text: Option<Cow<'a, str>>,
+}
+
+#[derive(Template)]
+#[template(path = "b_download_grid.html")]
+pub struct DownloadGridTemplate<'a> {
+    pub theme_name: Cow<'a, str>,
+    pub auto_endpoint: Cow<'a, str>,
+    pub artifacts: Vec<RenderableArtifact<'a>>,
 }
 
 mod filters {

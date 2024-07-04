@@ -192,6 +192,34 @@ async fn do_get_release<'a>(
                 }
             }
 
+            let (artifacts, unsupported_artifacts) = artifacts_collect(
+                product,
+                &product_data.settings,
+                &named_version,
+                config.artifact_types(),
+                config.endpoints(),
+                #[cfg(feature = "s3_bucket_list")]
+                config.get_bucket_list().await,
+            )
+            .await;
+
+            let auto_endpoint = &config.find_best_location(client_addr.0).key;
+
+            let downloads = DownloadGridTemplate {
+                theme_name: config.theme().into(),
+                auto_endpoint: auto_endpoint.clone().into(),
+                artifacts,
+            };
+            let downloads_unsupported = if unsupported_artifacts.is_empty() {
+                None
+            } else {
+                Some(DownloadGridTemplate {
+                    theme_name: config.theme().into(),
+                    auto_endpoint: auto_endpoint.clone().into(),
+                    artifacts: unsupported_artifacts,
+                })
+            };
+
             Ok(TemplateRelease {
                 self_name: config.self_name().into(),
                 theme_name: config.theme().into(),
@@ -214,23 +242,15 @@ async fn do_get_release<'a>(
                 .as_ref()
                 .map(ToString::to_string)
                 .map(Into::into),
-                artifacts: artifacts_collect(
-                    product,
-                    &product_data.settings,
-                    &named_version,
-                    config.artifact_types(),
-                    config.endpoints(),
-                    #[cfg(feature = "s3_bucket_list")]
-                    config.get_bucket_list().await,
-                )
-                .await,
+                downloads,
+                downloads_unsupported,
                 endpoints: config
                     .endpoints()
                     .get_all()
                     .iter()
                     .map(|s| (s.key.as_str().into(), s.display_name.as_str().into()))
                     .collect(),
-                auto_endpoint: config.find_best_location(client_addr.0).key.clone().into(),
+                auto_endpoint: auto_endpoint.clone().into(),
                 translate_note_text_en,
                 translate_note_text,
             })

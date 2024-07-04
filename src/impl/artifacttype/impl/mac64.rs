@@ -2,6 +2,7 @@ use crate::r#impl::artifacttype::{
     ArtifactDisplayTitle, ArtifactError, ArtifactInfo, ArtifactType,
 };
 use crate::r#impl::release_map::NamedVersion;
+use crate::r#impl::storage::DownloadSpec;
 use async_trait::async_trait;
 use indexmap::IndexMap;
 use serde_yaml::Value;
@@ -23,16 +24,16 @@ impl ArtifactType for Mac64ArtifactType {
         &self,
         _product_name: &'a str,
         _version: &'a str,
-        download_value: &'a str,
+        download_spec: &'a DownloadSpec,
         _setting: Option<&'a Value>,
     ) -> Result<ArtifactInfo<'a>, ArtifactError> {
         Ok(ArtifactInfo::new_file(
             ArtifactDisplayTitle::Descriptive {
-                file_name: download_value.into(),
+                file_name: download_spec.url().into(),
                 descriptive_title: "MacOS Intel x86".into(),
             },
             Some("mac64.png".into()),
-            download_value.into(),
+            download_spec.url().into(),
         ))
     }
 }

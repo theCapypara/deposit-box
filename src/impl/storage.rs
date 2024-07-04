@@ -160,7 +160,44 @@ pub struct VersionInfo {
     #[serde(default)]
     pub changelog_section: Option<u64>,
     #[serde(default)]
-    pub downloads: IndexMap<ArtifactKey, String>,
+    pub downloads: IndexMap<ArtifactKey, DownloadSpec>,
+}
+
+const DOWNLOAD_ATTRIBUTE_UNSUPPORTED: &str = "unsupported";
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(untagged)]
+pub enum DownloadSpec {
+    Url(String),
+    Complex {
+        url: String,
+        #[serde(flatten)]
+        attributes: IndexMap<String, Value>,
+    },
+    Null,
+}
+
+impl DownloadSpec {
+    pub fn url(&self) -> &str {
+        match self {
+            DownloadSpec::Url(url) => url,
+            DownloadSpec::Null => "",
+            DownloadSpec::Complex { url, .. } => url,
+        }
+    }
+
+    pub fn is_unsupported(&self) -> bool {
+        match self {
+            DownloadSpec::Complex { attributes, .. } => {
+                if let Some(v) = attributes.get(DOWNLOAD_ATTRIBUTE_UNSUPPORTED) {
+                    matches!(v, Value::Bool(true))
+                } else {
+                    false
+                }
+            }
+            _ => false,
+        }
+    }
 }
 
 impl<'a> From<&'a VersionInfo> for Cow<'a, VersionInfo> {

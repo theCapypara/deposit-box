@@ -79,63 +79,28 @@
 </div>
 <div class="lower">
     <h3>Downloads</h3>
-    <div class="downloads">
-        <div class="download-item download-item-header">
-            <div class="dli--icon"></div>
-            <h4 class="dli--file-name">
-                <span class="file-name--title">File Name</span>
-                <span class="file-name--name"></span>
-                <span class="file-name--extra"></span>
-            </h4>
-            <div class="dli--file-size">File Size</div>
-            <div class="dli--modified-date">Last Modified</div>
+    {{ downloads|escape("none") }}
+</div>
+{% match downloads_unsupported %}
+{% when Some with (downloads_unsupported) %}
+<div class="lower level-2">
+    <h4>Unsupported Downloads</h4>
+    <p>
+        This release has downloads for additional platforms.
+        These may be untested, or they may even be known to have some issues.
+        We can not guarantee that these will work correctly. Consider using
+        an older version instead or using another platform.
+    </p>
+    <div>
+        <input type="checkbox" id="unsupported-checkbox">
+        <label for="unsupported-checkbox">I want to see these downloads.</label>
+        <div class="unsupported-downloads">
+            {{ downloads_unsupported|escape("none") }}
         </div>
-        {% for artifact in artifacts %}
-        <div class="download-item">
-            <div class="dli--icon">
-                {% match artifact.icon_path %}
-                {% when Some with (icon_path) %}
-                    <img src="/static/theme/{{ theme_name }}/icons/{{ icon_path }}" alt="I">
-                {% when None %}
-                {% endmatch %}
-            </div>
-            <h4 class="dli--file-name">
-                <span class="file-name--title">
-                    <a {{ artifact.urls|endpoint_links(auto_endpoint)|escape("none") }}>
-                        {{ artifact.display_title() }}
-                    </a>
-                </span>
-                <span class="file-name--name">
-                    <a {{ artifact.urls|endpoint_links(auto_endpoint)|escape("none") }}>
-                        {{ artifact.display_subtitle() }}
-                    </a>
-                </span>
-                <span class="file-name--extra">
-                    {% match artifact.extra_info_markdown %}
-                    {% when Some with (extra_info_markdown) %}
-                        {{ extra_info_markdown|markdown }}
-                    {% when None %}
-                    {% endmatch %}
-                </span>
-            </h4>
-            <div class="dli--file-size">
-                {% match artifact.file_size %}
-                {% when Some with (size) %}
-                    {{ size }}
-                {% when None %}
-                {% endmatch %}
-            </div>
-            <div class="dli--modified-date">
-                {% match artifact.modified_date %}
-                {% when Some with (modified_date) %}
-                    {{ modified_date }}
-                {% when None %}
-                {% endmatch %}
-            </div>
-        </div>
-        {% endfor %}
     </div>
 </div>
+{% when None %}
+{% endmatch %}
 {% endblock %}
 
 {% block footer %}

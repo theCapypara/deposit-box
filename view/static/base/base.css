@@ -101,6 +101,10 @@
     display: none;
 }
 
+#unsupported-checkbox:not(:checked)~.unsupported-downloads {
+    display: none;
+}
+
 @media (max-width: 560px) {
     .header {
         flex-direction: column-reverse;

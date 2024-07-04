@@ -2,6 +2,7 @@ use crate::r#impl::artifacttype::{ArtifactError, ArtifactInfo, ArtifactType};
 use crate::r#impl::config::Config;
 use crate::r#impl::release_map::NamedVersion;
 use crate::r#impl::routes::{get_storage_config, is_release_info};
+use crate::r#impl::storage::DownloadSpec;
 use async_trait::async_trait;
 use indexmap::IndexMap;
 use rocket::get;
@@ -47,7 +48,7 @@ impl<T: FlathubBranch> ArtifactType for FlathubArtifactType<T> {
         &self,
         product_name: &'a str,
         version: &'a str,
-        download_value: &'a str,
+        download_spec: &'a DownloadSpec,
         setting: Option<&'a Value>,
     ) -> Result<ArtifactInfo<'a>, ArtifactError> {
         match setting {
@@ -63,7 +64,7 @@ impl<T: FlathubBranch> ArtifactType for FlathubArtifactType<T> {
                         [downgrade](https://docs.flatpak.org/en/latest/tips-and-tricks.html#downgrading) \
                         to this release use commit \
                         **{}**.*",
-                        download_value
+                        download_spec.url()
                     )
                     .into(),
                 );
