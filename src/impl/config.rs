@@ -18,6 +18,7 @@ use tokio::fs::read_to_string;
 use crate::r#impl::artifacttype::ArtifactTypes;
 #[cfg(feature = "geoip")]
 use crate::r#impl::geoip::{find_best_location, self_server_ip};
+#[cfg(feature = "github")]
 use crate::r#impl::github::GithubClient;
 use crate::r#impl::storage::{ProductsConfig, Storage, StorageError};
 #[cfg(feature = "amazon_translate")]

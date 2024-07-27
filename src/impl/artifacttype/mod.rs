@@ -7,8 +7,8 @@ use async_trait::async_trait;
 use indexmap::IndexMap;
 use log::warn;
 use rocket::fs::NamedFile;
-use rocket::response::{Redirect, Responder};
 use rocket::Request;
+use rocket::response::{Redirect, Responder};
 use serde_yaml::Value;
 use thiserror::Error;
 
@@ -41,6 +41,7 @@ impl<'r> Responder<'r, 'static> for NightlyArtifactResponder {
         match self {
             NightlyArtifactResponder::File(v) => v.respond_to(request),
             NightlyArtifactResponder::Redirect(v) => v.respond_to(request),
+            #[cfg(feature = "flatpak")]
             NightlyArtifactResponder::Flatpakref(v) => v.respond_to(request),
         }
     }

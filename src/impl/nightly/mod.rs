@@ -10,8 +10,8 @@ use rocket::State;
 use serde_yaml::Value;
 
 use crate::r#impl::artifacttype::{
-    get_artifact_nightly_download, get_artifact_nightly_info, ArtifactError, ArtifactKey,
-    ArtifactTypes, NightlyArtifactResponder, RenderableArtifact,
+    ArtifactError, ArtifactKey, ArtifactTypes, get_artifact_nightly_download,
+    get_artifact_nightly_info, NightlyArtifactResponder, RenderableArtifact,
 };
 use crate::r#impl::config::Config;
 #[cfg(feature = "github")]
@@ -88,6 +88,7 @@ async fn nightly_artifacts_collect(
     artifacts
 }
 
+#[cfg(feature = "github")]
 async fn get_github_nightly_info(
     config: &NightlyGitHubConfig,
 ) -> Result<(Option<i64>, Cow<'static, str>), Status> {
