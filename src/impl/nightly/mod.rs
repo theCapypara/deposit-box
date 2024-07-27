@@ -10,8 +10,8 @@ use rocket::State;
 use serde_yaml::Value;
 
 use crate::r#impl::artifacttype::{
-    ArtifactError, ArtifactKey, ArtifactTypes, get_artifact_nightly_download,
-    get_artifact_nightly_info, NightlyArtifactResponder, RenderableArtifact,
+    get_artifact_nightly_download, get_artifact_nightly_info, ArtifactError, ArtifactKey,
+    ArtifactTypes, NightlyArtifactResponder, RenderableArtifact,
 };
 use crate::r#impl::config::Config;
 #[cfg(feature = "github")]

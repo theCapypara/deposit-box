@@ -7,8 +7,8 @@ use async_trait::async_trait;
 use indexmap::IndexMap;
 use log::warn;
 use rocket::fs::NamedFile;
-use rocket::Request;
 use rocket::response::{Redirect, Responder};
+use rocket::Request;
 use serde_yaml::Value;
 use thiserror::Error;
 
