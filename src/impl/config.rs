@@ -18,6 +18,7 @@ use std::collections::HashMap;
 use std::env;
 use std::net::IpAddr;
 use std::path::PathBuf;
+use tokio::fs::read_to_string;
 
 #[cfg(not(feature = "geoip"))]
 /// If the GeoIP feature is not enabled, Location is simply a unit type.
@@ -45,6 +46,8 @@ pub struct Config {
     self_name: String,
     #[cfg(feature = "amazon_translate")]
     translate: Option<TranslateConfig>,
+    // Overwrite location to products.yml to read, just for development!
+    products_yml_path: Option<String>
 }
 
 impl Config {
@@ -106,6 +109,7 @@ impl Config {
                 .unwrap_or_else(SelfName::default_value),
             #[cfg(feature = "amazon_translate")]
             translate: TranslateConfig::get(),
+            products_yml_path: ProductsYmlPath::get_checked().ok(),
         };
 
         if !Self::check_env(&slf.endpoints) {
@@ -235,7 +239,15 @@ impl Config {
 
     /// Returns the product configuration, or an error on error. The result may be cached.
     pub async fn get_config(&self) -> Result<ProductsConfig, StorageError> {
-        self.storage.get_config().await
+        if let Some(overwitten_path) = self.products_yml_path.as_ref() {
+            warn!("Loading products.yml from overwritten path {}", overwitten_path);
+
+            Ok(serde_yaml::from_str(
+                &read_to_string(overwitten_path).await?,
+            )?)
+        } else {
+            self.storage.get_config().await
+        }
     }
 
     /// Returns the banner URL URL, may be cached.
@@ -487,4 +499,10 @@ struct MaxmindDbPath {}
 
 impl SimpleConfig for MaxmindDbPath {
     const VAR_NAME: &'static str = "DEPBOX_MAXMINDDB_PATH";
+}
+
+struct ProductsYmlPath {}
+
+impl SimpleConfig for ProductsYmlPath {
+    const VAR_NAME: &'static str = "DEPBOX_OVERWRITE_PRODUCTS_YML_PATH";
 }

@@ -16,6 +16,7 @@ use serde_yaml::Value;
 use std::borrow::Cow;
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::io;
 use std::sync::Mutex;
 use thiserror::Error;
 
@@ -110,6 +111,8 @@ pub enum StorageError {
     Reqwest(#[from] reqwest::Error),
     #[error("Error while reading YAML: {0}")]
     Yaml(#[from] serde_yaml::Error),
+    #[error("I/O error: {0}")]
+    IOError(#[from] io::Error),
     #[cfg(feature = "s3_bucket_list")]
     #[error("S3Error: {0}")]
     S3Error(#[from] S3Error),
