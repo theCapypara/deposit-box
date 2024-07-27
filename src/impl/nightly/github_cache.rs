@@ -16,7 +16,7 @@ async fn artifact_cache_dir() -> PathBuf {
 pub(super) async fn get_cached_artifact_run_id(product: &str, artifact: &str) -> String {
     let dir = artifact_cache_dir().await;
     let run_id_path = dir.join(product).join(format!("{artifact}.runid"));
-    let artifact_path = dir.join(format!("{artifact}.zip"));
+    let artifact_path = dir.join(product).join(format!("{artifact}.zip"));
     if run_id_path.exists() && artifact_path.exists() {
         read_to_string(run_id_path).await.unwrap_or_default()
     } else {
