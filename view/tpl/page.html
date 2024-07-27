@@ -6,22 +6,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Deposit Box{% endblock %}</title>
     <link rel="stylesheet" href="/static/base/base.css">
-    <link rel="stylesheet" href="/static/theme/{{ theme_name }}/theme.css?v3">
+    <link rel="stylesheet" href="/static/theme/{{ theme_name }}/theme.css?v0.5.0">
     {% block head %}{% endblock %}
 </head>
 <body>
 {% block header %}
-    <div class="header">
-        <div class="header-start">{%block header_start %}{% endblock %}</div>
-        <div class="header-end">
-            {% block header_end %}
-                <ul>
-                    <li><a href="/">All Products</a></li>
-                    <li><a href="{{ home_url }}">Home</a></li>
-                </ul>
-            {% endblock %}
-        </div>
+<div class="header">
+    <div class="header-start">{%block header_start %}{% endblock %}</div>
+    <div class="header-end">
+        {% block header_end %}
+        <ul>
+            <li><a href="/">All Products</a></li>
+            <li><a href="{{ home_url }}">Home</a></li>
+        </ul>
+        {% endblock %}
     </div>
+</div>
 {% endblock %}
 <div class="content">
     {% block content %}{% endblock %}

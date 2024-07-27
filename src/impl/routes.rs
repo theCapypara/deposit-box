@@ -1,12 +1,7 @@
-use crate::r#impl::artifacttype::{artifacts_collect, artifacts_describe};
-use crate::r#impl::config::Config;
-use crate::r#impl::markdown::markdown;
-use crate::r#impl::pre_release::parse_pre_release;
-use crate::r#impl::release_map::NamedVersion;
-use crate::r#impl::storage::ProductsConfig;
-use crate::r#impl::templates::*;
-#[cfg(feature = "amazon_translate")]
-use crate::r#impl::translate::*;
+use std::borrow::Cow;
+use std::io::Cursor;
+use std::net::IpAddr;
+
 use async_trait::async_trait;
 use cached::proc_macro::cached;
 use log::{error, warn};
@@ -17,9 +12,19 @@ use rocket::request::{FromRequest, Outcome};
 use rocket::response::{Redirect, Responder};
 use rocket::{catch, get, Request, State};
 use rocket_accept_language::AcceptLanguage;
-use std::borrow::Cow;
-use std::io::Cursor;
-use std::net::IpAddr;
+
+use crate::r#impl::artifacttype::{
+    artifacts_collect, artifacts_describe, NightlyArtifactResponder,
+};
+use crate::r#impl::config::Config;
+use crate::r#impl::markdown::markdown;
+use crate::r#impl::nightly::{do_get_nightly, do_get_nightly_artifact};
+use crate::r#impl::pre_release::parse_pre_release;
+use crate::r#impl::release_map::NamedVersion;
+use crate::r#impl::storage::{Product, ProductsConfig};
+use crate::r#impl::templates::*;
+#[cfg(feature = "amazon_translate")]
+use crate::r#impl::translate::*;
 
 type Response<T> = Result<T, Status>;
 const LATEST: &str = "latest";
@@ -69,6 +74,7 @@ pub async fn get_product<'a>(
                 home_url: config.home_url().into(),
                 default_endpoint_url: config.default_endpoint_url().into(),
                 product_key: product.into(),
+                has_nightly: product_data.nightly.is_some(),
                 product: product_data,
                 pre_release_patterns,
             })))
@@ -86,7 +92,26 @@ pub async fn get_release_en<'a>(
     product: &'a str,
     release: &'a str,
 ) -> Response<TemplateRelease<'a>> {
-    do_get_release(host, client_addr, config, product, release, None).await
+    if is_release_info(config, host) {
+        Err(Status::NotFound)
+    } else {
+        let storage_config = get_storage_config(config).await?;
+        let products = &storage_config.products;
+        if let Some(product_data) = products.get(product) {
+            do_get_release(
+                client_addr,
+                config,
+                &storage_config,
+                product,
+                product_data,
+                release,
+                None,
+            )
+            .await
+        } else {
+            Err(Status::NotFound)
+        }
+    }
 }
 
 #[get("/<product>/<release>")]
@@ -97,163 +122,197 @@ pub async fn get_release<'a>(
     config: &'a State<Config>,
     product: &'a str,
     release: &'a str,
-) -> Response<TemplateRelease<'a>> {
-    do_get_release(
-        host,
-        client_addr,
-        config,
-        product,
-        release,
-        Some(accept_language),
-    )
-    .await
-}
-
-async fn do_get_release<'a>(
-    host: &'a Host<'a>,
-    client_addr: ForwardedIpAddr,
-    config: &'a State<Config>,
-    product: &'a str,
-    release: &'a str,
-    #[allow(unused)] accept_language: Option<&AcceptLanguage>,
-) -> Response<TemplateRelease<'a>> {
+) -> Response<GetReleaseResponder<'a>> {
     if is_release_info(config, host) {
         Err(Status::NotFound)
     } else {
         let storage_config = get_storage_config(config).await?;
         let products = &storage_config.products;
         if let Some(product_data) = products.get(product) {
-            let latest = product_data
-                .versions
-                .latest(&storage_config.pre_release_patterns);
-
-            let named_version: NamedVersion = if release == LATEST {
-                latest.as_ref().unwrap().clone()
-            } else if let Some(named_version) = product_data.versions.get(release) {
-                named_version
-            } else {
-                return Err(Status::NotFound);
-            };
-
-            let mut iter_versions = product_data.versions.map().keys();
-            let mut product_version_prev = None;
-            let product_version_next;
-
-            loop {
-                if let Some(this_version) = iter_versions.next() {
-                    if this_version == named_version.name() {
-                        product_version_next = iter_versions.next();
-                        break;
-                    } else {
-                        product_version_prev = Some(this_version);
+            if release == "nightly" {
+                let nightly_result = do_get_nightly(config, product, product_data).await;
+                match nightly_result {
+                    Ok(v) => return Ok(GetReleaseResponder::Nightly(v)),
+                    Err(e) if e.code == 404 => {
+                        // Continue trying to resolve this as a release below
                     }
-                } else {
-                    panic!("Logic error trying to find prev and next version.");
+                    Err(e) => return Err(e),
                 }
             }
-
-            let mut description: Option<Cow<str>> = named_version
-                .info()
-                .description
-                .as_ref()
-                .map(AsRef::as_ref)
-                .map(markdown)
-                .map(Into::into);
-            let mut extra_description = artifacts_describe(
-                &product_data.settings,
-                &named_version,
-                config.artifact_types(),
-            )
-            .await;
-            for v in extra_description.values_mut() {
-                *v = Cow::Owned(markdown(v))
-            }
-            let mut translate_note_text_en = None;
-            let mut translate_note_text = None;
-
-            #[cfg(feature = "amazon_translate")]
-            if let Some(accept_language) = accept_language {
-                if let Some(client) = config.get_translate_client() {
-                    let lang = accept_language.get_first_language();
-                    if let Some(lang) = lang {
-                        if let Err(e) = translate_artifact_release(
-                            lang.as_str(),
-                            client,
-                            &mut description,
-                            &mut extra_description,
-                            &mut translate_note_text_en,
-                            &mut translate_note_text,
-                        )
-                        .await
-                        {
-                            warn!("Failed translating artifact release to {lang}: {e:?}")
-                        }
-                    }
-                }
-            }
-
-            let (artifacts, unsupported_artifacts) = artifacts_collect(
-                product,
-                &product_data.settings,
-                &named_version,
-                config.artifact_types(),
-                config.endpoints(),
-                #[cfg(feature = "s3_bucket_list")]
-                config.get_bucket_list().await,
-            )
-            .await;
-
-            let auto_endpoint = &config.find_best_location(client_addr.0).key;
-
-            let downloads = DownloadGridTemplate {
-                theme_name: config.theme().into(),
-                auto_endpoint: auto_endpoint.clone().into(),
-                artifacts,
-            };
-            let downloads_unsupported = if unsupported_artifacts.is_empty() {
-                None
-            } else {
-                Some(DownloadGridTemplate {
-                    theme_name: config.theme().into(),
-                    auto_endpoint: auto_endpoint.clone().into(),
-                    artifacts: unsupported_artifacts,
-                })
-            };
-
-            Ok(TemplateRelease {
-                self_name: config.self_name().into(),
-                theme_name: config.theme().into(),
-                home_url: config.home_url().into(),
-                default_endpoint_url: config.default_endpoint_url().into(),
-                product_key: product.into(),
-                release_key: release.into(),
-                product_title: product_data.name.to_string().into(),
-                product_version: named_version.name().to_string().into(),
-                product_version_prev: product_version_prev.cloned().map(Into::into),
-                product_version_next: product_version_next.cloned().map(Into::into),
-                release_date: named_version.info().date.clone().into(),
-                product_icon: product_data.icon_path.clone().map(Into::into),
-                description,
-                extra_description,
-                pre_release: parse_pre_release(
-                    named_version.name(),
-                    &storage_config.pre_release_patterns,
+            Ok(GetReleaseResponder::Release(
+                do_get_release(
+                    client_addr,
+                    config,
+                    &storage_config,
+                    product,
+                    product_data,
+                    release,
+                    Some(accept_language),
                 )
-                .as_ref()
-                .map(ToString::to_string)
-                .map(Into::into),
-                downloads,
-                downloads_unsupported,
-                endpoints: config
-                    .endpoints()
-                    .get_all()
-                    .iter()
-                    .map(|s| (s.key.as_str().into(), s.display_name.as_str().into()))
-                    .collect(),
-                auto_endpoint: auto_endpoint.clone().into(),
-                translate_note_text_en,
-                translate_note_text,
-            })
+                .await?,
+            ))
+        } else {
+            Err(Status::NotFound)
+        }
+    }
+}
+
+async fn do_get_release<'a>(
+    client_addr: ForwardedIpAddr,
+    config: &'a State<Config>,
+    storage_config: &ProductsConfig,
+    product_key: &'a str,
+    product_data: &Product,
+    release: &'a str,
+    #[allow(unused)] accept_language: Option<&AcceptLanguage>,
+) -> Response<TemplateRelease<'a>> {
+    let latest = product_data
+        .versions
+        .latest(&storage_config.pre_release_patterns);
+
+    let named_version: NamedVersion = if release == LATEST {
+        latest.as_ref().unwrap().clone()
+    } else if let Some(named_version) = product_data.versions.get(release) {
+        named_version
+    } else {
+        return Err(Status::NotFound);
+    };
+
+    let mut iter_versions = product_data.versions.map().keys();
+    let mut product_version_prev = None;
+    let product_version_next;
+
+    loop {
+        if let Some(this_version) = iter_versions.next() {
+            if this_version == named_version.name() {
+                product_version_next = iter_versions.next();
+                break;
+            } else {
+                product_version_prev = Some(this_version);
+            }
+        } else {
+            panic!("Logic error trying to find prev and next version.");
+        }
+    }
+
+    let mut description: Option<Cow<str>> = named_version
+        .info()
+        .description
+        .as_ref()
+        .map(AsRef::as_ref)
+        .map(markdown)
+        .map(Into::into);
+    let mut extra_description = artifacts_describe(
+        &product_data.settings,
+        &named_version,
+        config.artifact_types(),
+    )
+    .await;
+    for v in extra_description.values_mut() {
+        *v = Cow::Owned(markdown(v))
+    }
+    let mut translate_note_text_en = None;
+    let mut translate_note_text = None;
+
+    #[cfg(feature = "amazon_translate")]
+    if let Some(accept_language) = accept_language {
+        if let Some(client) = config.get_translate_client() {
+            let lang = accept_language.get_first_language();
+            if let Some(lang) = lang {
+                if let Err(e) = translate_artifact_release(
+                    lang.as_str(),
+                    client,
+                    &mut description,
+                    &mut extra_description,
+                    &mut translate_note_text_en,
+                    &mut translate_note_text,
+                )
+                .await
+                {
+                    warn!("Failed translating artifact release to {lang}: {e:?}")
+                }
+            }
+        }
+    }
+
+    let (artifacts, unsupported_artifacts) = artifacts_collect(
+        product_key,
+        &product_data.settings,
+        &named_version,
+        config.artifact_types(),
+        config.endpoints(),
+        #[cfg(feature = "s3_bucket_list")]
+        config.get_bucket_list().await,
+    )
+    .await;
+
+    let auto_endpoint = &config.find_best_location(client_addr.0).key;
+
+    let downloads = DownloadGridTemplate {
+        theme_name: config.theme().into(),
+        auto_endpoint: auto_endpoint.clone().into(),
+        show_file_size_and_date: true,
+        artifacts,
+    };
+    let downloads_unsupported = if unsupported_artifacts.is_empty() {
+        None
+    } else {
+        Some(DownloadGridTemplate {
+            theme_name: config.theme().into(),
+            auto_endpoint: auto_endpoint.clone().into(),
+            show_file_size_and_date: true,
+            artifacts: unsupported_artifacts,
+        })
+    };
+
+    Ok(TemplateRelease {
+        self_name: config.self_name().into(),
+        theme_name: config.theme().into(),
+        home_url: config.home_url().into(),
+        default_endpoint_url: config.default_endpoint_url().into(),
+        product_key: product_key.into(),
+        release_key: release.into(),
+        product_title: product_data.name.to_string().into(),
+        product_version: named_version.name().to_string().into(),
+        product_version_prev: product_version_prev.cloned().map(Into::into),
+        product_version_next: product_version_next.cloned().map(Into::into),
+        release_date: named_version.info().date.clone().into(),
+        has_nightly: product_data.nightly.is_some(),
+        product_icon: product_data.icon_path.clone().map(Into::into),
+        description,
+        extra_description,
+        pre_release: parse_pre_release(named_version.name(), &storage_config.pre_release_patterns)
+            .as_ref()
+            .map(ToString::to_string)
+            .map(Into::into),
+        downloads,
+        downloads_unsupported,
+        endpoints: config
+            .endpoints()
+            .get_all()
+            .iter()
+            .map(|s| (s.key.as_str().into(), s.display_name.as_str().into()))
+            .collect(),
+        auto_endpoint: auto_endpoint.clone().into(),
+        translate_note_text_en,
+        translate_note_text,
+    })
+}
+
+#[get("/nightly-download/<product>/<artifacttype>")]
+pub async fn get_nightly_artifact<'r>(
+    host: &Host<'_>,
+    config: &State<Config>,
+    product: &str,
+    artifacttype: &str,
+) -> Result<NightlyArtifactResponder, Status> {
+    if is_release_info(config, host) {
+        Err(Status::NotFound)
+    } else {
+        let storage_config = get_storage_config(config).await?;
+        let products = &storage_config.products;
+        if let Some(product_data) = products.get(product) {
+            do_get_nightly_artifact(config, product, product_data, artifacttype).await
         } else {
             Err(Status::NotFound)
         }
@@ -350,6 +409,20 @@ impl<'r> Responder<'r, 'r> for GetProductResponder<'r> {
         match self {
             GetProductResponder::LatestRelease(release) => release.respond_to(request),
             GetProductResponder::Template(tpl) => tpl.respond_to(request),
+        }
+    }
+}
+
+pub enum GetReleaseResponder<'a> {
+    Release(TemplateRelease<'a>),
+    Nightly(TemplateNightly<'a>),
+}
+
+impl<'r> Responder<'r, 'r> for GetReleaseResponder<'r> {
+    fn respond_to(self, request: &'r Request<'_>) -> rocket::response::Result<'r> {
+        match self {
+            GetReleaseResponder::Release(v) => v.respond_to(request),
+            GetReleaseResponder::Nightly(v) => v.respond_to(request),
         }
     }
 }

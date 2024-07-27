@@ -1,6 +1,9 @@
-use crate::r#impl::artifacttype::ArtifactKey;
-use crate::r#impl::config::Endpoint;
-use crate::r#impl::release_map::ReleaseMap;
+use std::borrow::Cow;
+use std::cell::RefCell;
+use std::collections::HashMap;
+use std::io;
+use std::sync::Mutex;
+
 use cached::proc_macro::cached;
 use indexmap::IndexMap;
 use log::{debug, warn};
@@ -13,12 +16,12 @@ use s3::serde_types::ListBucketResult;
 use s3::{Bucket, Region};
 use serde::Deserialize;
 use serde_yaml::Value;
-use std::borrow::Cow;
-use std::cell::RefCell;
-use std::collections::HashMap;
-use std::io;
-use std::sync::Mutex;
 use thiserror::Error;
+
+use crate::r#impl::artifacttype::ArtifactKey;
+use crate::r#impl::config::Endpoint;
+use crate::r#impl::nightly::NightlyConfig;
+use crate::r#impl::release_map::ReleaseMap;
 
 pub const PRODUCTS_YML: &str = "products.yml";
 
@@ -151,6 +154,8 @@ pub struct Product {
     #[serde(default)]
     pub settings: HashMap<ArtifactKey, Value>,
     pub versions: ReleaseMap,
+    #[serde(default)]
+    pub nightly: Option<NightlyConfig>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]

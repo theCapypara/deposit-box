@@ -1,16 +1,17 @@
-use crate::r#impl::config::SimpleConfig;
+use std::borrow::Cow;
+use std::string::FromUtf8Error;
+
 use async_compat::Compat;
 use aws_config::BehaviorVersion;
 use aws_sdk_translate::primitives::Blob;
 use aws_sdk_translate::types::{Document, Formality, TranslationSettings};
 use cached::proc_macro::cached;
-use cached::SizedCache;
 use indexmap::IndexMap;
 use log::{debug, warn};
 use rocket::futures::executor;
-use std::borrow::Cow;
-use std::string::FromUtf8Error;
 use thiserror::Error;
+
+use crate::r#impl::config::SimpleConfig;
 
 static SUPPORTED_LANGS: &[&str] = &[
     "af", "sq", "am", "ar", "hy", "az", "bn", "bs", "bg", "ca", "zh", "zh-TW", "hr", "cs", "da",
@@ -68,8 +69,8 @@ pub async fn translate_html(
 }
 
 #[cached(
-    ty = "SizedCache<String, String>",
-    create = "{ SizedCache::with_size(5000) }",
+    key = "String",
+    size = 5000,
     convert = r#"{ format!("{}::{}::{}", lang, is_html, input) }"#,
     sync_writes = true,
     result = true

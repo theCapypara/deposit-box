@@ -1,20 +1,26 @@
-pub mod fallback;
-pub mod r#impl;
+use std::borrow::Cow;
+use std::collections::{BTreeMap, HashMap};
+use std::error::Error;
 
-use crate::r#impl::artifacttype::fallback::FallbackArtifactType;
-use crate::r#impl::artifacttype::r#impl::*;
-use crate::r#impl::config::Endpoints;
-use crate::r#impl::release_map::NamedVersion;
-use crate::r#impl::storage::DownloadSpec;
 use askama::filters::filesizeformat;
 use async_trait::async_trait;
 use indexmap::IndexMap;
 use log::warn;
+use rocket::fs::NamedFile;
+use rocket::response::{Redirect, Responder};
+use rocket::Request;
 use serde_yaml::Value;
-use std::borrow::Cow;
-use std::collections::{BTreeMap, HashMap};
-use std::marker::PhantomData;
 use thiserror::Error;
+
+use crate::r#impl::artifacttype::fallback::FallbackArtifactType;
+use crate::r#impl::artifacttype::r#impl::*;
+use crate::r#impl::config::Endpoints;
+use crate::r#impl::nightly::NightlyConfig;
+use crate::r#impl::release_map::NamedVersion;
+use crate::r#impl::storage::DownloadSpec;
+
+pub mod fallback;
+pub mod r#impl;
 
 /// This key in ArtifactTypes is used as the fallback implementation for unknown
 /// artifact types.
@@ -22,6 +28,23 @@ pub const FALLBACK_KEY: &str = "__fallback";
 
 pub type ArtifactKey = String;
 pub struct ArtifactTypes(IndexMap<String, Box<dyn ArtifactType>>);
+
+pub enum NightlyArtifactResponder {
+    File(NamedFile),
+    Redirect(Redirect),
+    #[cfg(feature = "flatpak")]
+    Flatpakref(Flatpakref),
+}
+
+impl<'r> Responder<'r, 'static> for NightlyArtifactResponder {
+    fn respond_to(self, request: &'r Request<'_>) -> rocket::response::Result<'static> {
+        match self {
+            NightlyArtifactResponder::File(v) => v.respond_to(request),
+            NightlyArtifactResponder::Redirect(v) => v.respond_to(request),
+            NightlyArtifactResponder::Flatpakref(v) => v.respond_to(request),
+        }
+    }
+}
 
 impl From<IndexMap<String, Box<dyn ArtifactType>>> for ArtifactTypes {
     fn from(v: IndexMap<String, Box<dyn ArtifactType>>) -> Self {
@@ -35,13 +58,24 @@ impl Default for ArtifactTypes {
         m.insert(FALLBACK_KEY.into(), Box::new(FallbackArtifactType));
         #[cfg(feature = "flatpak")]
         m.insert(
-            FlathubStable::ARTIFACT_KEY.into(),
-            Box::new(FlathubArtifactType::<FlathubStable>(PhantomData)),
+            FLATPAK_CUSTOM_ARTIFACT_KEY.into(),
+            Box::new(FlatpakArtifactType::new(FLATPAK_CUSTOM_ARTIFACT_KEY, None)),
         );
         #[cfg(feature = "flatpak")]
         m.insert(
-            FlathubBeta::ARTIFACT_KEY.into(),
-            Box::new(FlathubArtifactType::<FlathubBeta>(PhantomData)),
+            FLATHUB_STABLE_ARTIFACT_KEY.into(),
+            Box::new(FlatpakArtifactType::new(
+                FLATHUB_STABLE_ARTIFACT_KEY,
+                Some(FlatpakRepo::flathub_stable()),
+            )),
+        );
+        #[cfg(feature = "flatpak")]
+        m.insert(
+            FLATHUB_BETA_ARTIFACT_KEY.into(),
+            Box::new(FlatpakArtifactType::new(
+                FLATHUB_BETA_ARTIFACT_KEY,
+                Some(FlatpakRepo::flathub_beta()),
+            )),
         );
         #[cfg(feature = "github")]
         m.insert("github".into(), Box::new(GithubArtifactType));
@@ -71,6 +105,21 @@ pub trait ArtifactType: Send + Sync {
         download_spec: &'a DownloadSpec,
         setting: Option<&'a Value>,
     ) -> Result<ArtifactInfo<'a>, ArtifactError>;
+
+    async fn get_nightly_artifact_info<'a>(
+        &self,
+        product_name: &'a str,
+        download_spec: &'a DownloadSpec,
+        setting: Option<&'a Value>,
+    ) -> Result<ArtifactInfo<'a>, ArtifactError>;
+
+    async fn get_nightly_artifact_download<'a>(
+        &self,
+        product_name: &'a str,
+        download_spec: &'a DownloadSpec,
+        setting: Option<&'a Value>,
+        nightly_config: &'a NightlyConfig,
+    ) -> Result<NightlyArtifactResponder, ArtifactError>;
 }
 
 #[derive(Debug)]
@@ -200,6 +249,39 @@ async fn get_artifact_info<'a>(
     }
 }
 
+pub(crate) async fn get_artifact_nightly_info<'a>(
+    ats: &ArtifactTypes,
+    key: &str,
+    product_name: &'a str,
+    download_spec: &'a DownloadSpec,
+    setting: Option<&'a Value>,
+) -> Result<ArtifactInfo<'a>, ArtifactError> {
+    if let Some(at_info) = ats.0.get(key) {
+        at_info
+            .get_nightly_artifact_info(product_name, download_spec, setting)
+            .await
+    } else {
+        Err(ArtifactError::NoFallback)
+    }
+}
+
+pub(crate) async fn get_artifact_nightly_download<'a>(
+    ats: &ArtifactTypes,
+    key: &str,
+    product_name: &'a str,
+    download_spec: &'a DownloadSpec,
+    setting: Option<&'a Value>,
+    nightly_config: &'a NightlyConfig,
+) -> Result<NightlyArtifactResponder, ArtifactError> {
+    if let Some(at_info) = ats.0.get(key) {
+        at_info
+            .get_nightly_artifact_download(product_name, download_spec, setting, nightly_config)
+            .await
+    } else {
+        Err(ArtifactError::NoFallback)
+    }
+}
+
 #[cfg(feature = "s3_bucket_list")]
 fn get_file_metadata<'a>(
     bucket_list: &'a Option<Vec<s3::serde_types::ListBucketResult>>,
@@ -227,11 +309,16 @@ pub enum ArtifactError {
         "The product did not have the configuration for this artifact type in the correct format."
     )]
     MissingSetting,
+    #[error("The artifact provider does not support this feature.")]
+    NotSupported,
+    #[error("{0}")]
+    Custom(Box<dyn Error>),
 }
 
 enum ArtifactPath<'a> {
     File(Cow<'a, str>),
     RemoteUrl(Cow<'a, str>),
+    None,
 }
 
 #[derive(Debug)]
@@ -323,12 +410,29 @@ impl<'a> ArtifactInfo<'a> {
         }
     }
 
+    /// Create a new artifact info that has no URL info.
+    pub fn new_empty<T: Into<ArtifactDisplayTitle<'a>>>(
+        display_name: T,
+        icon: Option<Cow<'a, str>>,
+    ) -> Self {
+        Self {
+            display_name: display_name.into(),
+            extra_info_markdown: None,
+            icon,
+            path: ArtifactPath::None,
+        }
+    }
+
     pub fn set_extra_info_markdown(&mut self, value: Cow<'a, str>) {
         self.extra_info_markdown = Some(value);
     }
 
     pub fn display_name(&self) -> &ArtifactDisplayTitle {
         &self.display_name
+    }
+
+    pub fn extra_info_markdown(&self) -> Option<&Cow<str>> {
+        self.extra_info_markdown.as_ref()
     }
 
     pub fn icon(&self) -> Option<&Cow<'a, str>> {
@@ -371,6 +475,7 @@ impl<'a> ArtifactInfo<'a> {
                 .iter()
                 .map(|e| (e.display_name.clone().into(), remote_url.to_string().into()))
                 .collect(),
+            ArtifactPath::None => BTreeMap::new(),
         }
     }
 }

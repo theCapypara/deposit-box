@@ -1,4 +1,4 @@
-<div class="downloads">
+<div class="downloads {% if !show_file_size_and_date %}no-file-size-no-date{% endif %}">
     <div class="download-item download-item-header">
         <div class="dli--icon"></div>
         <h4 class="dli--file-name">
@@ -6,8 +6,10 @@
             <span class="file-name--name"></span>
             <span class="file-name--extra"></span>
         </h4>
+        {% if show_file_size_and_date %}
         <div class="dli--file-size">File Size</div>
         <div class="dli--modified-date">Last Modified</div>
+        {% endif %}
     </div>
     {% for artifact in artifacts %}
     <div class="download-item">
@@ -37,6 +39,7 @@
                     {% endmatch %}
                 </span>
         </h4>
+        {% if show_file_size_and_date %}
         <div class="dli--file-size">
             {% match artifact.file_size %}
             {% when Some with (size) %}
@@ -51,6 +54,7 @@
             {% when None %}
             {% endmatch %}
         </div>
+        {% endif %}
     </div>
     {% endfor %}
 </div>

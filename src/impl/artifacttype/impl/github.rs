@@ -1,13 +1,18 @@
-use crate::r#impl::artifacttype::{ArtifactError, ArtifactInfo, ArtifactType};
-use crate::r#impl::release_map::NamedVersion;
-use crate::r#impl::storage::DownloadSpec;
+use std::borrow::Cow;
+
 use async_trait::async_trait;
-use cached::proc_macro::cached;
 use indexmap::IndexMap;
 use log::debug;
-use octocrab::models::repos::Release;
+use rocket::response::Redirect;
 use serde_yaml::Value;
-use std::borrow::Cow;
+
+use crate::r#impl::artifacttype::{
+    ArtifactDisplayTitle, ArtifactError, ArtifactInfo, ArtifactType, NightlyArtifactResponder,
+};
+use crate::r#impl::github::GithubClient;
+use crate::r#impl::nightly::NightlyConfig;
+use crate::r#impl::release_map::NamedVersion;
+use crate::r#impl::storage::DownloadSpec;
 
 pub struct GithubArtifactType;
 
@@ -22,17 +27,18 @@ impl ArtifactType for GithubArtifactType {
         match setting {
             Some(Value::String(project_name)) => {
                 if let Some((org, repo)) = project_name.split_once('/') {
-                    match fetch_github_release(
-                        org.to_string(),
-                        repo.to_string(),
-                        version
-                            .info()
-                            .changelog
-                            .as_deref()
-                            .unwrap_or_else(|| version.name())
-                            .to_string(),
-                    )
-                    .await
+                    match GithubClient::get_instance()
+                        .fetch_release(
+                            org,
+                            repo,
+                            version
+                                .info()
+                                .changelog
+                                .as_deref()
+                                .unwrap_or_else(|| version.name())
+                                .to_string(),
+                        )
+                        .await
                     {
                         Ok(release) => {
                             if let Some(release_description) = release.body {
@@ -88,18 +94,35 @@ impl ArtifactType for GithubArtifactType {
             _ => Err(ArtifactError::MissingSetting),
         }
     }
-}
 
-#[cached(time = 7200, time_refresh = false, sync_writes = true, result = false)]
-async fn fetch_github_release(
-    org: String,
-    repo: String,
-    version_name: String,
-) -> Result<Release, String> {
-    octocrab::instance()
-        .repos(org, repo)
-        .releases()
-        .get_by_tag(&version_name)
-        .await
-        .map_err(|err| format!("{:?}", err))
+    async fn get_nightly_artifact_info<'a>(
+        &self,
+        _product_name: &'a str,
+        _download_spec: &'a DownloadSpec,
+        _setting: Option<&'a Value>,
+    ) -> Result<ArtifactInfo<'a>, ArtifactError> {
+        Ok(ArtifactInfo::new_empty(
+            ArtifactDisplayTitle::Simple("Source on GitHub".into()),
+            Some("github.png".into()),
+        ))
+    }
+
+    async fn get_nightly_artifact_download<'a>(
+        &self,
+        _product_name: &'a str,
+        download_spec: &'a DownloadSpec,
+        setting: Option<&'a Value>,
+        _nightly_config: &'a NightlyConfig,
+    ) -> Result<NightlyArtifactResponder, ArtifactError> {
+        match setting {
+            Some(Value::String(project_name)) => Ok(NightlyArtifactResponder::Redirect(
+                Redirect::permanent(format!(
+                    "https://github.com/{}/tree/{}",
+                    project_name,
+                    download_spec.url()
+                )),
+            )),
+            _ => Err(ArtifactError::MissingSetting),
+        }
+    }
 }

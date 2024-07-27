@@ -1,8 +1,10 @@
-use crate::r#impl::artifacttype::RenderableArtifact;
-use crate::r#impl::storage::{PreReleasePatternEntry, Product};
+use std::borrow::Cow;
+
 use askama::Template;
 use indexmap::IndexMap;
-use std::borrow::Cow;
+
+use crate::r#impl::artifacttype::RenderableArtifact;
+use crate::r#impl::storage::{PreReleasePatternEntry, Product};
 
 #[derive(Template)]
 #[template(path = "p_404.html")]
@@ -40,6 +42,7 @@ pub struct TemplateReleases<'a> {
     pub product_key: Cow<'a, str>,
     pub product: Product,
     pub pre_release_patterns: Vec<PreReleasePatternEntry>,
+    pub has_nightly: bool,
 }
 
 #[derive(Template)]
@@ -67,6 +70,22 @@ pub struct TemplateRelease<'a> {
     pub auto_endpoint: Cow<'a, str>,
     pub translate_note_text_en: Option<Cow<'a, str>>,
     pub translate_note_text: Option<Cow<'a, str>>,
+    pub has_nightly: bool,
+}
+
+#[derive(Template)]
+#[template(path = "p_nightly.html")]
+pub struct TemplateNightly<'a> {
+    pub self_name: Cow<'a, str>,
+    pub theme_name: Cow<'a, str>,
+    pub home_url: Cow<'a, str>,
+    pub product_key: Cow<'a, str>,
+    pub product_title: Cow<'a, str>,
+    pub product_icon: Option<Cow<'a, str>>,
+    pub downloads: DownloadGridTemplate<'a>,
+    pub default_endpoint_url: Cow<'a, str>,
+    pub last_built_time: Option<i64>,
+    pub description: Cow<'a, str>,
 }
 
 #[derive(Template)]
@@ -75,11 +94,15 @@ pub struct DownloadGridTemplate<'a> {
     pub theme_name: Cow<'a, str>,
     pub auto_endpoint: Cow<'a, str>,
     pub artifacts: Vec<RenderableArtifact<'a>>,
+    pub show_file_size_and_date: bool,
 }
 
 mod filters {
     use std::borrow::Cow;
     use std::collections::BTreeMap;
+
+    use chrono::{TimeZone, Utc};
+    use relativetime::RelativeTime;
 
     pub fn endpoint_links(
         urls: &BTreeMap<Cow<str>, Cow<str>>,
@@ -98,5 +121,15 @@ mod filters {
             out.push(format!("data-href-{}=\"{}\"", k.to_lowercase(), url))
         }
         Ok(out.join(" "))
+    }
+
+    pub fn fulltime(timestamp: &&i64) -> askama::Result<String> {
+        let date_time = Utc.timestamp_opt(**timestamp, 0).unwrap();
+        Ok(date_time.format("%Y-%m-%d %H:%M:%S UTC").to_string())
+    }
+
+    pub fn reltime(timestamp: &&i64) -> askama::Result<String> {
+        let date_time = Utc.timestamp_opt(**timestamp, 0).unwrap();
+        Ok(date_time.to_relative())
     }
 }

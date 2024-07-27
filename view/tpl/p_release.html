@@ -6,13 +6,13 @@
 <ul class="release-wheel">
     {% match product_version_prev %}
     {% when Some with (product_version_prev) %}
-        <li class="prev-release"><a href="/{{ product_key }}/{{ product_version_prev }}">{{ product_version_prev }}</a></li>
+    <li class="prev-release"><a href="/{{ product_key }}/{{ product_version_prev }}">{{ product_version_prev }}</a></li>
     {% when None %}
     {% endmatch %}
     <li class="current-release">{{ product_version }}</li>
     {% match product_version_next %}
     {% when Some with (product_version_next) %}
-        <li class="next-release"><a href="/{{ product_key }}/{{ product_version_next }}">{{ product_version_next }}</a></li>
+    <li class="next-release"><a href="/{{ product_key }}/{{ product_version_next }}">{{ product_version_next }}</a></li>
     {% when None %}
     {% endmatch %}
 </ul>
@@ -21,6 +21,9 @@
 {% block header_end %}
 <ul>
     <li><a href="/{{ product_key }}">All Releases</a></li>
+    {% if has_nightly %}
+    <li><a href="/{{ product_key }}/nightly">Nightly</a></li>
+    {% endif %}
     <li><a href="/">All Products</a></li>
     <li><a href="{{ home_url }}">Home</a></li>
 </ul>
@@ -31,7 +34,7 @@
     <div class="logo-and-title">
         {% match product_icon %}
         {% when Some with (icon_path) %}
-            <img src="{{ default_endpoint_url }}/{{ icon_path }}" alt="{{ product_title }}" class="logo">
+        <img src="{{ default_endpoint_url }}/{{ icon_path }}" alt="{{ product_title }}" class="logo">
         {% when None %}
         {% endmatch %}
         <div class="title">
@@ -40,23 +43,27 @@
         </div>
         {% match pre_release %}
         {% when Some with (pre_release) %}
-        <div><div class="pre-release">
-            This is an <strong>{{ pre_release }}</strong> pre-release.<br>
-            It is used to test new features.
-        </div></div>
+        <div>
+            <div class="pre-release">
+                This is an <strong>{{ pre_release }}</strong> pre-release.<br>
+                It is used to test new features.
+            </div>
+        </div>
         {% when None %}
         {% endmatch %}
         {% match translate_note_text_en %}
         {% when Some with (translate_note_text_en) %}
-            {% match translate_note_text %}
-            {% when Some with (translate_note_text) %}
-            <div><div class="translate-note">
+        {% match translate_note_text %}
+        {% when Some with (translate_note_text) %}
+        <div>
+            <div class="translate-note">
                 {{ translate_note_text }}<br>
                 <span class="translate-note-small">({{ translate_note_text_en }})</span><br>
                 <a href="/{{ product_key }}/{{ release_key}}/en">View in English.</a>
-            </div></div>
-            {% when None %}
-            {% endmatch %}
+            </div>
+        </div>
+        {% when None %}
+        {% endmatch %}
         {% when None %}
         {% endmatch %}
         <p class="released-on">Released on {{ release_date }}.</p>
@@ -105,12 +112,14 @@
 
 {% block footer %}
 <div class="footer">
-    <noscript>The mirror {{ auto_endpoint }} has been selected. You need JavaScript enabled to select a mirror.</noscript>
+    <noscript>The mirror {{ auto_endpoint }} has been selected. You need JavaScript enabled to select a mirror.
+    </noscript>
     <div class="mirror-select">
         <label for="mirror-select">Download Mirror:</label>
         <select id="mirror-select">
             {% for (key, display_name) in endpoints %}
-            <option value="{{ key }}" {% if key.as_ref() == auto_endpoint %}selected{% endif %}>{{ display_name }}</option>
+            <option value="{{ key }}" {% if key.as_ref()== auto_endpoint %}selected{% endif %}>{{ display_name }}
+            </option>
             {% endfor %}
         </select>
     </div>

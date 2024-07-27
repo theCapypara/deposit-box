@@ -1,10 +1,15 @@
-use crate::r#impl::artifacttype::{ArtifactError, ArtifactInfo, ArtifactType};
-use crate::r#impl::release_map::NamedVersion;
-use crate::r#impl::storage::DownloadSpec;
+use std::borrow::Cow;
+
 use async_trait::async_trait;
 use indexmap::IndexMap;
 use serde_yaml::Value;
-use std::borrow::Cow;
+
+use crate::r#impl::artifacttype::{
+    ArtifactError, ArtifactInfo, ArtifactType, NightlyArtifactResponder,
+};
+use crate::r#impl::nightly::NightlyConfig;
+use crate::r#impl::release_map::NamedVersion;
+use crate::r#impl::storage::DownloadSpec;
 
 pub struct PypiArtifactType;
 
@@ -33,5 +38,24 @@ impl ArtifactType for PypiArtifactType {
             )),
             _ => Err(ArtifactError::MissingSetting),
         }
+    }
+
+    async fn get_nightly_artifact_info<'a>(
+        &self,
+        _product_name: &'a str,
+        _download_spec: &'a DownloadSpec,
+        _setting: Option<&'a Value>,
+    ) -> Result<ArtifactInfo<'a>, ArtifactError> {
+        Err(ArtifactError::NotSupported)
+    }
+
+    async fn get_nightly_artifact_download<'a>(
+        &self,
+        _product_name: &'a str,
+        _download_spec: &'a DownloadSpec,
+        _setting: Option<&'a Value>,
+        _nightly_config: &'a NightlyConfig,
+    ) -> Result<NightlyArtifactResponder, ArtifactError> {
+        Err(ArtifactError::NotSupported)
     }
 }

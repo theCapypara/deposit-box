@@ -1,0 +1,46 @@
+{% extends "page.html" %}
+
+{% block title %} {{ self_name }} - {{ product_title }} - Nightly{% endblock %}
+
+{% block header_end %}
+<ul>
+    <li><a href="/{{ product_key }}">All Releases</a></li>
+    <li><a href="/{{ product_key }}/nightly">Nightly</a></li>
+    <li><a href="/">All Products</a></li>
+    <li><a href="{{ home_url }}">Home</a></li>
+</ul>
+{% endblock %}
+
+{% block content %}
+<div class="upper">
+    <div class="logo-and-title">
+        {% match product_icon %}
+        {% when Some with (icon_path) %}
+        <img src="{{ default_endpoint_url }}/{{ icon_path }}" alt="{{ product_title }}" class="logo">
+        {% when None %}
+        {% endmatch %}
+        <div class="title">
+            <h1>{{ product_title }}</h1>
+            <h2>Nightly</h2>
+        </div>
+        {% match last_built_time %}
+        {% when Some with (last_built_time) %}
+        <p class="released-on">
+            Last built <span title="{{ last_built_time|fulltime }}">{{ last_built_time|reltime }}</span>.
+        </p>
+        {% when None %}
+        {% endmatch %}
+        <hr>
+    </div>
+    <div class="release-description">
+        <p>These are experimental builds of the latest code. They may or may not work.</p>
+        <div class="description-block">
+            {{ description|safe }}
+        </div>
+    </div>
+</div>
+<div class="lower">
+    <h3>Downloads</h3>
+    {{ downloads|escape("none") }}
+</div>
+{% endblock %}

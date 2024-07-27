@@ -2,12 +2,14 @@
 #[macro_use]
 extern crate rocket;
 
-use crate::r#impl::config::Config;
-#[cfg(feature = "flatpak")]
-use r#impl::artifacttype::r#impl::flathub::{get_flatpakref, get_flatpakref_beta};
-use r#impl::routes::*;
 use rocket::fs::FileServer;
 use rocket::{catchers, routes, Build, Rocket};
+
+#[cfg(feature = "flatpak")]
+use r#impl::artifacttype::r#impl::flatpak::{get_flatpakref, get_flatpakref_beta};
+use r#impl::routes::*;
+
+use crate::r#impl::config::Config;
 
 mod r#impl;
 
@@ -25,6 +27,7 @@ pub fn rocket() -> Rocket<Build> {
                         get_product,
                         get_release_en,
                         get_release,
+                        get_nightly_artifact,
                         get_banner,
                         get_banner_png,
                         favicon,
@@ -39,6 +42,7 @@ pub fn rocket() -> Rocket<Build> {
                         get_product,
                         get_release_en,
                         get_release,
+                        get_nightly_artifact,
                         get_banner,
                         get_banner_png,
                         favicon,

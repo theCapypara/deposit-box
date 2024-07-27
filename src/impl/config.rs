@@ -1,9 +1,9 @@
-use crate::r#impl::artifacttype::ArtifactTypes;
-#[cfg(feature = "geoip")]
-use crate::r#impl::geoip::{find_best_location, self_server_ip};
-use crate::r#impl::storage::{ProductsConfig, Storage, StorageError};
-#[cfg(feature = "amazon_translate")]
-use crate::r#impl::translate::TranslateConfig;
+use std::collections::hash_map::Entry;
+use std::collections::HashMap;
+use std::env;
+use std::net::IpAddr;
+use std::path::PathBuf;
+
 use dotenv::dotenv;
 #[cfg(feature = "geoip")]
 use geoutils::Location;
@@ -13,12 +13,15 @@ use log::{debug, error, info, warn};
 use regex::Regex;
 #[cfg(feature = "s3_bucket_list")]
 use s3::serde_types::ListBucketResult;
-use std::collections::hash_map::Entry;
-use std::collections::HashMap;
-use std::env;
-use std::net::IpAddr;
-use std::path::PathBuf;
 use tokio::fs::read_to_string;
+
+use crate::r#impl::artifacttype::ArtifactTypes;
+#[cfg(feature = "geoip")]
+use crate::r#impl::geoip::{find_best_location, self_server_ip};
+use crate::r#impl::github::GithubClient;
+use crate::r#impl::storage::{ProductsConfig, Storage, StorageError};
+#[cfg(feature = "amazon_translate")]
+use crate::r#impl::translate::TranslateConfig;
 
 #[cfg(not(feature = "geoip"))]
 /// If the GeoIP feature is not enabled, Location is simply a unit type.
@@ -47,7 +50,7 @@ pub struct Config {
     #[cfg(feature = "amazon_translate")]
     translate: Option<TranslateConfig>,
     // Overwrite location to products.yml to read, just for development!
-    products_yml_path: Option<String>
+    products_yml_path: Option<String>,
 }
 
 impl Config {
@@ -87,6 +90,9 @@ impl Config {
         {
             best_location = endpoints.get_all()[0].clone();
         }
+
+        #[cfg(feature = "github")]
+        GithubClient::init_token(GithubToken::get());
 
         let storage = Storage::new(best_location)
             .map_err(|e| error!("Failed to initialize storage: {}", e))?;
@@ -240,7 +246,10 @@ impl Config {
     /// Returns the product configuration, or an error on error. The result may be cached.
     pub async fn get_config(&self) -> Result<ProductsConfig, StorageError> {
         if let Some(overwitten_path) = self.products_yml_path.as_ref() {
-            warn!("Loading products.yml from overwritten path {}", overwitten_path);
+            warn!(
+                "Loading products.yml from overwritten path {}",
+                overwitten_path
+            );
 
             Ok(serde_yaml::from_str(
                 &read_to_string(overwitten_path).await?,
@@ -499,6 +508,12 @@ struct MaxmindDbPath {}
 
 impl SimpleConfig for MaxmindDbPath {
     const VAR_NAME: &'static str = "DEPBOX_MAXMINDDB_PATH";
+}
+
+struct GithubToken {}
+
+impl SimpleConfig for GithubToken {
+    const VAR_NAME: &'static str = "DEPBOX_GITHUB_TOKEN";
 }
 
 struct ProductsYmlPath {}

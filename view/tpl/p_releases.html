@@ -2,13 +2,23 @@
 
 {% block title %} {{ self_name }} - {{ product.name }}{% endblock %}
 
+{% block header_end %}
+<ul>
+    {% if has_nightly %}
+    <li><a href="/{{ product_key }}/nightly">Nightly</a></li>
+    {% endif %}
+    <li><a href="/">All Products</a></li>
+    <li><a href="{{ home_url }}">Home</a></li>
+</ul>
+{% endblock %}
+
 {% block content %}
 <div class="upper">
     <div class="logo-and-title">
         {% match product.icon_path %}
-            {% when Some with (icon_path) %}
-            <img src="{{ default_endpoint_url }}/{{ icon_path }}" alt="{{ product.name }}" class="logo">
-            {% when None %}
+        {% when Some with (icon_path) %}
+        <img src="{{ default_endpoint_url }}/{{ icon_path }}" alt="{{ product.name }}" class="logo">
+        {% when None %}
         {% endmatch %}
         <div class="title">
             <h1>{{ product.name }}</h1>
@@ -17,7 +27,7 @@
     </div>
     <ul class="releases-list">
         {% for version in product.versions.list(pre_release_patterns) %}
-        <li {% if version.is_pre_release %}class="pre-release"{% endif %}>
+        <li {% if version.is_pre_release %}class="pre-release" {% endif %}>
             <a href="/{{ product_key }}/{{ version.name }}">{{ version.name }}</a>
             {% if version.is_latest %}
             <em class="latest">(<a href="/{{ product_key }}/latest">latest</a>)</em>
