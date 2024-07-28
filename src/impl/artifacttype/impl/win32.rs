@@ -43,11 +43,14 @@ impl ArtifactType for Win32ArtifactType {
     async fn get_nightly_artifact_info<'a>(
         &self,
         _product_name: &'a str,
-        _download_spec: &'a DownloadSpec,
+        download_spec: &'a DownloadSpec,
         _setting: Option<&'a Value>,
     ) -> Result<ArtifactInfo<'a>, ArtifactError> {
         Ok(ArtifactInfo::new_empty(
-            ArtifactDisplayTitle::Simple("Windows (32-bit)".into()),
+            ArtifactDisplayTitle::Descriptive {
+                file_name: download_spec.url().into(),
+                descriptive_title: "Windows (32-bit)".into(),
+            },
             Some("win32.png".into()),
         ))
     }

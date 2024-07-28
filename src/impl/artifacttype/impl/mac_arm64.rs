@@ -33,7 +33,7 @@ impl ArtifactType for MacArm64ArtifactType {
         Ok(ArtifactInfo::new_file(
             ArtifactDisplayTitle::Descriptive {
                 file_name: download_spec.url().into(),
-                descriptive_title: "MacOS ARM64".into(),
+                descriptive_title: "MacOS arm64".into(),
             },
             Some("mac64.png".into()),
             download_spec.url().into(),
@@ -43,11 +43,14 @@ impl ArtifactType for MacArm64ArtifactType {
     async fn get_nightly_artifact_info<'a>(
         &self,
         _product_name: &'a str,
-        _download_spec: &'a DownloadSpec,
+        download_spec: &'a DownloadSpec,
         _setting: Option<&'a Value>,
     ) -> Result<ArtifactInfo<'a>, ArtifactError> {
         Ok(ArtifactInfo::new_empty(
-            ArtifactDisplayTitle::Simple("MacOS ARM64".into()),
+            ArtifactDisplayTitle::Descriptive {
+                file_name: download_spec.url().into(),
+                descriptive_title: "MacOS arm64".into(),
+            },
             Some("mac64.png".into()),
         ))
     }
