@@ -120,7 +120,7 @@ async fn cached_fetch_github_release(
 }
 
 #[cached(
-    time = 7200,
+    time = 900,
     key = "String",
     convert = r#"{ format!("{}/{}::{}@{}", org, repo, workflow, branch) }"#,
     time_refresh = false,
