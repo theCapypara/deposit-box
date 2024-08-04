@@ -1,4 +1,4 @@
-on: [push]
+on: [ push ]
 
 name: Build with different features
 
@@ -16,6 +16,7 @@ jobs:
           - "flatpak"
           - "github"
           - "sort_versions"
+          - "amazon_translate"
     name: Build
     runs-on: ubuntu-latest
     steps:

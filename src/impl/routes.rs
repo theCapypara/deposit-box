@@ -5,12 +5,12 @@ use std::net::IpAddr;
 use async_trait::async_trait;
 use cached::proc_macro::cached;
 use log::{error, warn};
-use rocket::http::uri::Host;
+use rocket::{catch, get, Request, State};
 use rocket::http::{ContentType, Header, Status};
+use rocket::http::uri::Host;
 use rocket::outcome::Outcome::{Forward, Success};
 use rocket::request::{FromRequest, Outcome};
 use rocket::response::{Redirect, Responder};
-use rocket::{catch, get, Request, State};
 use rocket_accept_language::AcceptLanguage;
 
 use crate::r#impl::artifacttype::{
@@ -195,6 +195,7 @@ async fn do_get_release<'a>(
         }
     }
 
+    #[allow(unused_mut)] // amazon_translate feature
     let mut description: Option<Cow<str>> = named_version
         .info()
         .description
@@ -211,7 +212,9 @@ async fn do_get_release<'a>(
     for v in extra_description.values_mut() {
         *v = Cow::Owned(markdown(v))
     }
+    #[allow(unused_mut)] // amazon_translate feature
     let mut translate_note_text_en = None;
+    #[allow(unused_mut)] // amazon_translate feature
     let mut translate_note_text = None;
 
     #[cfg(feature = "amazon_translate")]

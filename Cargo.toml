@@ -1,10 +1,10 @@
 [package]
 name = "deposit-box"
-version = "0.5.2"
+version = "0.5.3"
 edition = "2021"
 
 [features]
-default = ["geoip", "pypi", "flatpak", "github", "s3_bucket_list", "amazon_translate"]
+default = ["geoip", "pypi", "flatpak", "github", "s3_bucket_list"]
 s3_bucket_list = ["rust-s3"]
 geoip = ["geoutils", "public-ip", "maxminddb", "async-compat"]
 pypi = []
