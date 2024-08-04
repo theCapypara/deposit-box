@@ -6,9 +6,9 @@ use aws_config::BehaviorVersion;
 use aws_sdk_translate::primitives::Blob;
 use aws_sdk_translate::types::{Document, Formality, TranslationSettings};
 use cached::proc_macro::cached;
+use futures::executor;
 use indexmap::IndexMap;
 use log::{debug, warn};
-use rocket::futures::executor;
 use thiserror::Error;
 
 use crate::r#impl::config::SimpleConfig;

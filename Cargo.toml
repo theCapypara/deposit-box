@@ -11,7 +11,7 @@ pypi = []
 flatpak = []
 github = ["octocrab", "bytes"]
 sort_versions = ["version-compare"]
-amazon_translate = ["aws-config", "aws-sdk-translate"]
+amazon_translate = ["aws-config", "aws-sdk-translate", "async-compat", "futures"]
 
 [dependencies]
 async-trait = "0.1"
@@ -46,5 +46,6 @@ maxminddb = { version = "0.24", optional = true }
 aws-config = { version = "1.5", optional = true }
 aws-sdk-translate = { version = "1.33", optional = true }
 async-compat = { version = "0.2", optional = true }
+futures = { version = "0.3", features = ["executor"], optional = true }
 relativetime = { version = "0.1", features = ["chrono"] }
 xdg = "2.5"
