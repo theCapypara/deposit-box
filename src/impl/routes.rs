@@ -5,12 +5,12 @@ use std::net::IpAddr;
 use async_trait::async_trait;
 use cached::proc_macro::cached;
 use log::{error, warn};
-use rocket::{catch, get, Request, State};
-use rocket::http::{ContentType, Header, Status};
 use rocket::http::uri::Host;
+use rocket::http::{ContentType, Header, Status};
 use rocket::outcome::Outcome::{Forward, Success};
 use rocket::request::{FromRequest, Outcome};
 use rocket::response::{Redirect, Responder};
+use rocket::{catch, get, Request, State};
 use rocket_accept_language::AcceptLanguage;
 
 use crate::r#impl::artifacttype::{
