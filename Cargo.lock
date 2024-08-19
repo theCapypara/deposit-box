@@ -772,6 +772,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ade8366b8bd5ba243f0a58f036cc0ca8a2f069cff1a2351ef1cac6b083e16fc0"
 
 [[package]]
+name = "caseless"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "808dab3318747be122cb31d36de18d4d1c81277a76f8332a02b81a3d73463d7f"
+dependencies = [
+ "regex",
+ "unicode-normalization",
+]
+
+[[package]]
 name = "cc"
 version = "1.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -862,10 +872,11 @@ dependencies = [
 
 [[package]]
 name = "comrak"
-version = "0.24.1"
+version = "0.27.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5a972c8ec1be8065f7b597b5f7f5b3be535db780280644aebdcd1966decf58dc"
+checksum = "2d061c6d53fe98c25efda0d91b7f6b4b4020a51dad78a3eac5028710aa26f8e7"
 dependencies = [
+ "caseless",
  "clap",
  "derive_builder 0.20.0",
  "entities",
@@ -1050,7 +1061,7 @@ dependencies = [
  "bytes",
  "cached",
  "chrono",
- "comrak 0.24.1",
+ "comrak 0.27.0",
  "dotenv",
  "futures",
  "geoutils",
