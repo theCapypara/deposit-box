@@ -17,19 +17,19 @@ amazon_translate = ["aws-config", "aws-sdk-translate", "async-compat", "futures"
 async-trait = "0.1"
 log = "0.4"
 pretty_env_logger = "0.5"
-tokio = { version = "1.33", features = ["full"] }
-rocket = "0.5.1"
-rocket-accept-language = "0.8.2"
+tokio = { version = "1.41", features = ["full"] }
+rocket = "0.5"
+rocket-accept-language = "0.8"
 reqwest = "0.12"
 serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.9"
-rust-s3 = { version = "0.34", optional = true }
+rust-s3 = { version = "0.35", optional = true }
 chrono = "0.4"
 # This is past 0.11.0 with updated Rocket to 0.5
-askama = { version = "0.12.1", features = ["markdown", "with-rocket"] }
-askama_rocket = { version = "0.12.0" }
-octocrab = { version = "0.38", optional = true }
-bytes = { version = "1.6", optional = true }
+askama = { version = "0.12", features = ["markdown", "with-rocket"] }
+askama_rocket = { version = "0.12" }
+octocrab = { version = "0.41", optional = true }
+bytes = { version = "1.8", optional = true }
 dotenv = "0.15"
 serde_regex = "1.1"
 regex = "1.10"
@@ -44,7 +44,7 @@ geoutils = { version = "0.5", optional = true }
 public-ip = { version = "0.2", optional = true }
 maxminddb = { version = "0.24", optional = true }
 aws-config = { version = "1.5", optional = true }
-aws-sdk-translate = { version = "1.33", optional = true }
+aws-sdk-translate = { version = "1.48", optional = true }
 async-compat = { version = "0.2", optional = true }
 futures = { version = "0.3", features = ["executor"], optional = true }
 relativetime = { version = "0.1", features = ["chrono"] }
