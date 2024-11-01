@@ -6,7 +6,9 @@ use rocket::fs::FileServer;
 use rocket::{catchers, routes, Build, Rocket};
 
 #[cfg(feature = "flatpak")]
-use r#impl::artifacttype::r#impl::flatpak::{get_flatpakref, get_flatpakref_beta};
+use r#impl::artifacttype::r#impl::flatpak::{
+    get_flatpakref, get_flatpakref_beta, get_flatpakref_custom,
+};
 use r#impl::routes::*;
 
 use crate::r#impl::config::Config;
@@ -32,7 +34,8 @@ pub fn rocket() -> Rocket<Build> {
                         get_banner_png,
                         favicon,
                         get_flatpakref,
-                        get_flatpakref_beta
+                        get_flatpakref_beta,
+                        get_flatpakref_custom
                     ]
                 }
                 #[cfg(not(feature = "flatpak"))]

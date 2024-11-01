@@ -34,6 +34,7 @@ pub struct FlatpakRepo {
 }
 
 impl FlatpakRepo {
+    #[allow(unused)]
     pub fn flatpak_custom(
         url: String,
         suggested_name: String,
