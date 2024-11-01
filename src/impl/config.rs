@@ -106,7 +106,7 @@ impl Config {
             products_yml_path: ProductsYmlPath::get_checked().ok(),
         };
 
-        if !Self::check_env(&slf.endpoints()) {
+        if !Self::check_env(slf.endpoints()) {
             return Err(());
         }
 
@@ -228,7 +228,7 @@ impl Config {
     }
 
     pub fn endpoints(&self) -> &Endpoints {
-        &self.storage.endpoints()
+        self.storage.endpoints()
     }
 
     /// Returns the product configuration, or an error on error. The result may be cached.
