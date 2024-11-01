@@ -416,6 +416,7 @@ impl<'r> Responder<'r, 'r> for GetProductResponder<'r> {
     }
 }
 
+#[allow(clippy::large_enum_variant)]
 pub enum GetReleaseResponder<'a> {
     Release(TemplateRelease<'a>),
     Nightly(TemplateNightly<'a>),
