@@ -17,7 +17,7 @@ use tokio::fs::read_to_string;
 
 use crate::r#impl::artifacttype::ArtifactTypes;
 #[cfg(feature = "geoip")]
-use crate::r#impl::geoip::{find_best_location, self_server_ip};
+use crate::r#impl::geoip::{find_best_location, self_server_ip, sort_by_location};
 #[cfg(feature = "github")]
 use crate::r#impl::github::GithubClient;
 use crate::r#impl::storage::{ProductsConfig, Storage, StorageError};
@@ -38,7 +38,6 @@ lazy_static! {
 }
 
 pub struct Config {
-    endpoints: Endpoints,
     #[cfg(feature = "geoip")]
     geoipdb: Option<maxminddb::Reader<Vec<u8>>>,
     banner: bool,
@@ -64,42 +63,30 @@ impl Config {
             return Err(());
         }
 
-        let endpoints = Endpoints::load();
-
-        let best_location: Endpoint;
-
         #[cfg(feature = "geoip")]
-        let geoipdb;
-
-        #[cfg(feature = "geoip")]
-        {
-            geoipdb = Self::load_geoipdb()
-                .map(|r| {
-                    r.map_err(|e| {
-                        warn!("Failed to load Maxmind-compatible GeoIP database: {}", e);
-                    })
+        let geoipdb = Self::load_geoipdb()
+            .map(|r| {
+                r.map_err(|e| {
+                    warn!("Failed to load Maxmind-compatible GeoIP database: {}", e);
                 })
-                .transpose()?;
+            })
+            .transpose()?;
 
-            best_location = match &geoipdb {
-                None => &endpoints.get_all()[0],
-                Some(geoipdb) => find_best_location(&endpoints, geoipdb, self_server_ip()),
-            }
-            .clone();
-        }
+        #[cfg(feature = "geoip")]
+        let endpoints = Endpoints::load(
+            #[cfg(feature = "geoip")]
+            geoipdb.as_ref(),
+        );
         #[cfg(not(feature = "geoip"))]
-        {
-            best_location = endpoints.get_all()[0].clone();
-        }
+        let endpoints = Endpoints::load();
 
         #[cfg(feature = "github")]
         GithubClient::init_token(GithubToken::get());
 
-        let storage = Storage::new(best_location)
-            .map_err(|e| error!("Failed to initialize storage: {}", e))?;
+        let storage =
+            Storage::new(endpoints).map_err(|e| error!("Failed to initialize storage: {}", e))?;
 
         let slf = Self {
-            endpoints,
             storage,
             #[cfg(feature = "geoip")]
             geoipdb,
@@ -119,7 +106,7 @@ impl Config {
             products_yml_path: ProductsYmlPath::get_checked().ok(),
         };
 
-        if !Self::check_env(&slf.endpoints) {
+        if !Self::check_env(&slf.endpoints()) {
             return Err(());
         }
 
@@ -225,7 +212,7 @@ impl Config {
     }
 
     pub fn default_endpoint_url(&self) -> &str {
-        self.storage.endpoint_url()
+        &self.storage.endpoints().get_all()[0].url
     }
 
     pub fn theme(&self) -> &str {
@@ -241,7 +228,7 @@ impl Config {
     }
 
     pub fn endpoints(&self) -> &Endpoints {
-        &self.endpoints
+        &self.storage.endpoints()
     }
 
     /// Returns the product configuration, or an error on error. The result may be cached.
@@ -260,7 +247,7 @@ impl Config {
         }
     }
 
-    /// Returns the banner URL URL, may be cached.
+    /// Returns the banner target URL, may be cached.
     pub async fn get_banner_url_url(&self) -> Option<String> {
         self.get_config()
             .await
@@ -279,14 +266,14 @@ impl Config {
     #[cfg(feature = "geoip")]
     pub fn find_best_location(&self, addr: IpAddr) -> &Endpoint {
         match &self.geoipdb {
-            None => &self.endpoints.get_all()[0],
-            Some(geoipdb) => find_best_location(&self.endpoints, geoipdb, addr),
+            None => &self.storage.endpoints().get_all()[0],
+            Some(geoipdb) => find_best_location(self.storage.endpoints().get_all(), geoipdb, addr),
         }
     }
 
     #[cfg(not(feature = "geoip"))]
     pub fn find_best_location(&self, _addr: IpAddr) -> &Endpoint {
-        &self.endpoints.get_all()[0]
+        &self.storage.endpoints().get_all()[0]
     }
 
     #[cfg(feature = "s3_bucket_list")]
@@ -324,7 +311,7 @@ trait SimpleConfigBool {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Endpoint {
     pub key: String,
     pub display_name: String,
@@ -338,8 +325,14 @@ pub struct Endpoints {
 }
 
 impl Endpoints {
-    pub fn load() -> Self {
-        let endpoints = Self::do_load_from_env();
+    pub fn load(#[cfg(feature = "geoip")] geoipdb: Option<&maxminddb::Reader<Vec<u8>>>) -> Self {
+        let mut endpoints = Self::do_load_from_env();
+
+        #[cfg(feature = "geoip")]
+        if let Some(geoipdb) = geoipdb {
+            sort_by_location(&mut endpoints, geoipdb, self_server_ip());
+        }
+
         Self {
             _loaded_map: endpoints
                 .iter()

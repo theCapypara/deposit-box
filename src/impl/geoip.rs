@@ -1,4 +1,4 @@
-use crate::r#impl::config::{Endpoint, Endpoints};
+use crate::r#impl::config::Endpoint;
 use async_compat::Compat;
 use geoutils::{Distance, Location};
 use itertools::Itertools;
@@ -7,8 +7,42 @@ use maxminddb::geoip2;
 use rocket::futures::executor;
 use std::net::{IpAddr, Ipv4Addr};
 
+pub fn sort_by_location<S: AsRef<[u8]>>(
+    endpoints: &mut [Endpoint],
+    geoipdb: &maxminddb::Reader<S>,
+    ip_addr: IpAddr,
+) {
+    match geoipdb.lookup::<geoip2::City>(ip_addr) {
+        Ok(city) => match city.location {
+            Some(geoip2::city::Location {
+                latitude: Some(lat),
+                longitude: Some(lon),
+                ..
+            }) => endpoints.sort_by_key(|ep| {
+                ep.location
+                    .distance_to(&Location::new(lat, lon))
+                    .unwrap_or_else(|_| Distance::from_meters(9999999))
+                    .meters()
+                    .abs() as i64
+            }),
+            _ => {
+                debug!(
+                    "Failed to find location for IP address: {:?} has no location information.",
+                    city
+                );
+            }
+        },
+        Err(err) => {
+            debug!(
+                "Failed to find location for IP address: {}: {}",
+                ip_addr, err
+            );
+        }
+    }
+}
+
 pub fn find_best_location<'a, S: AsRef<[u8]>>(
-    endpoints: &'a Endpoints,
+    endpoints: &'a [Endpoint],
     geoipdb: &maxminddb::Reader<S>,
     ip_addr: IpAddr,
 ) -> &'a Endpoint {
@@ -19,7 +53,6 @@ pub fn find_best_location<'a, S: AsRef<[u8]>>(
                 longitude: Some(lon),
                 ..
             }) => endpoints
-                .get_all()
                 .iter()
                 .sorted_by_key(|ep| {
                     ep.location
@@ -35,7 +68,7 @@ pub fn find_best_location<'a, S: AsRef<[u8]>>(
                     "Failed to find location for IP address: {:?} has no location information.",
                     city
                 );
-                &endpoints.get_all()[0]
+                &endpoints[0]
             }
         },
         Err(err) => {
@@ -43,7 +76,7 @@ pub fn find_best_location<'a, S: AsRef<[u8]>>(
                 "Failed to find location for IP address: {}: {}",
                 ip_addr, err
             );
-            &endpoints.get_all()[0]
+            &endpoints[0]
         }
     }
 }
